@@ -72,3 +72,19 @@ test('buildModules adds builtins', async () => {
   });
   assert.deepEqual(r.logs.map((l) => l.text), ['ok']);
 });
+
+test('a handler that never responds fails fast (well under the sandbox timeout)', async () => {
+  const src = "require('http').createServer(() => {}).listen(3000);";
+  const r = await runProject({ files: { 'a.js': src }, entry: 'a.js' });
+  const t0 = Date.now();
+  await assert.rejects(r.session.request({}), /res\.end/);
+  assert.ok(Date.now() - t0 < 600, `took ${Date.now() - t0} ms`);
+});
+
+test('fixtures.responseTimeoutMs overrides the default response timeout', async () => {
+  const src = "require('http').createServer(() => {}).listen(3000);";
+  const r = await runProject({ files: { 'a.js': src }, entry: 'a.js', fixtures: { responseTimeoutMs: 50 } });
+  const t0 = Date.now();
+  await assert.rejects(r.session.request({}), /res\.end/);
+  assert.ok(Date.now() - t0 < 200, `took ${Date.now() - t0} ms`);
+});

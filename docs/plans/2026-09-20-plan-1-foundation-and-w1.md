@@ -2723,3 +2723,14 @@ git commit -m "feat(ui): CodeMirror editor with textarea fallback; verify W1 end
 | 5 | W6 | PK/unique/FK constraints in mysql-sim, three error-shape lessons, assignment self-check (no solutions) |
 | 6 | Deploy | confirm repo name + visibility with the user, create repo, enable GitHub Pages, verify the live URL |
 
+
+## Execution notes (what changed while running this plan)
+
+Found during browser verification and fixed at the source; later plans should inherit these.
+
+1. **`[hidden]` CSS:** `.filetabs { display:flex }` overrode the `hidden` attribute (a lone `app.js` tab showed on single-file blocks). Fixed with a global `[hidden]{display:none !important}` in `css/app.css`.
+2. **`replaceChildren(null)` writes the text "null".** `showLogs`/test rendering in `js/runpanel.js` now build arrays and push conditionally. Never pass a possibly-null value to `replaceChildren`/`append`.
+3. **Progress counting:** `js/app-lesson.js` and `js/app-hub.js` count only block ids that exist in the module (`blocks.filter(b => store.isDone(...))`) instead of `store.doneCount`, so renamed/removed blocks cannot inflate progress. `doneCount` remains in the store API but is no longer used by the pages.
+4. **CodeMirror pin:** `https://esm.sh/codemirror@6` resolves to a build with only a `default` export; use `codemirror@6.0.2` (named `EditorView`, `basicSetup`). Verified: 6 editors mount, textarea hidden, no console errors. For automated checks, get a view with `EditorView.findFromDOM(el)` imported from the same URL (`el.cmView.view` does not exist).
+5. **Fail-fast response timeout:** the net-sim response timeout was 1.5 s, so an exercise with two unanswered requests (x-404 starter) tripped the 3 s sandbox timeout and showed the misleading "loop ไม่จบ" message. `runProject` now defaults the network `responseTimeoutMs` to **300 ms** and honours `fixtures.responseTimeoutMs` for blocks that legitimately delay (e.g. `setTimeout` demos in W2). Covered by two tests in `tests/runner.test.js`.
+6. **Known limitation:** clicking "ตรวจคำตอบ"/Run again while a previous call is in flight rejects the earlier call with "sandbox ถูกหยุดก่อนทำงานเสร็จ" (the sandbox is restarted per run). Harmless for single clicks; a future polish task could disable the buttons while running.

@@ -19,7 +19,11 @@ export async function runProject({ files, entry, fixtures = {}, buildModules }) 
   const logs = [];
   const level = (l) => (...args) => logs.push({ level: l, text: formatArgs(args) });
   const console = { log: level('log'), info: level('info'), warn: level('warn'), error: level('error'), debug: level('log') };
-  const network = createNetwork({ onError: (e) => level('error')('Uncaught ' + describe(e)) });
+  const network = createNetwork({
+    onError: (e) => level('error')('Uncaught ' + describe(e)),
+    // in-memory network: a handler that has not answered after this long never will
+    responseTimeoutMs: fixtures.responseTimeoutMs ?? 300,
+  });
   const node = createNodeModules({ network, files: fixtures.fs || {} });
   const builtins = { ...node, ...(buildModules ? buildModules({ network, fixtures, console }) : {}) };
   const session = { request: (req) => network.request(req), network, logs };

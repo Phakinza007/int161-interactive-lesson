@@ -58,7 +58,7 @@ INT161/interactive-lesson/        ← root ที่จะ deploy
     express-sim.js                express, Router, middleware, error middleware
     mysql-sim.js                  mysql2 / mysql2/promise + ตารางใน memory + constraint
     net-sim.js                    "เครือข่าย" ในหน่วยความจำ: listen() ลงทะเบียน handler, request() ยิงเข้า handler
-  content/w1.js … w6.js           บล็อกของแต่ละสัปดาห์ (ข้อมูล ไม่ใช่โค้ด logic)
+  content/wN.js (+ wN-*.js)        บล็อกของแต่ละสัปดาห์ (ข้อมูล ไม่ใช่โค้ด logic; wN.js ประกอบจากไฟล์ย่อย)
   tests/                          node --test สำหรับ engine + check-ratio.mjs
   docs/specs/                     สเปกนี้
 ```
