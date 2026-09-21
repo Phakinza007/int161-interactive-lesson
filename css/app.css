@@ -1,0 +1,80 @@
+:root {
+  --bg:#f7f7f4; --surface:#fff; --surface2:#efeee9; --text:#15171c; --muted:#6a6f7a; --border:#dcdbd4;
+  --concept:#2f6fed; --experiment:#d98a00; --exercise:#159a5a; --danger:#d03b3b; --code-bg:#12151c; --code-fg:#e6e9f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#0f1420; --surface:#161d2e; --surface2:#1c2540; --text:#e8ecf6; --muted:#9aa5c0; --border:#2a3454;
+    --concept:#6ea8fe; --experiment:#f0b84a; --exercise:#43c46a; --danger:#ef6b6b; }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { margin:0; background:var(--bg); color:var(--text); line-height:1.7;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif; }
+a { color: var(--concept); }
+.wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 96px; }
+.muted { color: var(--muted); font-size: 14px; }
+h1 { font-size: 26px; line-height: 1.35; margin: 8px 0 12px; }
+
+.topbar { position: sticky; top: 0; z-index: 10; display:flex; align-items:center; gap:12px; padding:10px 16px;
+  background: var(--surface); border-bottom: 1px solid var(--border); }
+.progress { flex:1; height:8px; background:var(--surface2); border-radius:999px; overflow:hidden; }
+#progress-fill { height:100%; width:0; background:var(--exercise); transition:width .2s; }
+
+.ratio-bar { display:flex; height:10px; border-radius:999px; overflow:hidden; background:var(--surface2); gap:2px; }
+.seg-concept { background:var(--concept); } .seg-experiment { background:var(--experiment); } .seg-exercise { background:var(--exercise); }
+.ratio-legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13px; color:var(--muted); margin-top:6px; }
+.ratio-legend span::before { content:''; display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:6px; background:currentColor; }
+.dot-concept::before { color:var(--concept); } .dot-experiment::before { color:var(--experiment); } .dot-exercise::before { color:var(--exercise); }
+
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:20px; }
+.card { display:block; padding:16px; background:var(--surface); border:1px solid var(--border); border-radius:14px; color:inherit; text-decoration:none; }
+.card:hover:not(.soon) { border-color: var(--concept); }
+.card.soon { opacity:.55; }
+.card h3 { margin:2px 0 12px; font-size:17px; line-height:1.4; }
+.card-id { color:var(--muted); font-weight:700; font-size:12px; letter-spacing:.08em; }
+
+.block { background:var(--surface); border:1px solid var(--border); border-left:5px solid var(--concept); border-radius:12px;
+  padding:16px; margin:18px 0; }
+.block-experiment { border-left-color: var(--experiment); } .block-exercise { border-left-color: var(--exercise); }
+.block-head { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.block-head h2 { font-size:19px; margin:0; flex:1; min-width:180px; }
+.badge { font-size:12px; font-weight:700; padding:2px 10px; border-radius:999px; background:var(--surface2); }
+.badge-concept { color:var(--concept); } .badge-experiment { color:var(--experiment); } .badge-exercise { color:var(--exercise); }
+.check { visibility:hidden; color:var(--exercise); font-weight:700; }
+.block.done .check { visibility:visible; }
+.prose table { border-collapse:collapse; width:100%; display:block; overflow-x:auto; }
+.prose th, .prose td { border:1px solid var(--border); padding:6px 10px; text-align:left; vertical-align:top; }
+.prose code, .prose pre { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px; }
+.prose pre { background:var(--code-bg); color:var(--code-fg); padding:12px; border-radius:8px; overflow-x:auto; }
+.source { margin-top:12px; font-size:12px; color:var(--muted); }
+
+.btn { font:inherit; font-size:14px; padding:6px 14px; border-radius:8px; border:1px solid var(--border);
+  background:var(--surface2); color:var(--text); cursor:pointer; }
+.btn.primary { background:var(--concept); border-color:var(--concept); color:#fff; }
+.btn.read { margin-top:10px; }
+.actions { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+
+.code-input { width:100%; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13.5px; line-height:1.55;
+  background:var(--code-bg); color:var(--code-fg); border:1px solid var(--border); border-radius:8px; padding:12px; resize:vertical; tab-size:2; }
+.filetabs { display:flex; gap:6px; margin-bottom:6px; overflow-x:auto; }
+.tab { font:inherit; font-size:13px; padding:3px 10px; border:1px solid var(--border); border-radius:6px 6px 0 0; background:var(--surface2); color:var(--text); cursor:pointer; }
+.tab.on { background:var(--code-bg); color:var(--code-fg); }
+
+.output, .response { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; background:var(--code-bg); color:var(--code-fg);
+  border-radius:8px; padding:10px 12px; margin-top:8px; white-space:pre-wrap; word-break:break-word; }
+.output:empty { display:none; }
+.log-error { color:#ff8b8b; } .log-warn { color:#f0c674; } .log-info { color:#8ab4ff; }
+.reqbox { margin-top:10px; padding:10px; border:1px dashed var(--border); border-radius:8px; }
+.reqrow { display:flex; gap:6px; margin:6px 0; flex-wrap:wrap; }
+.reqrow input { flex:1; min-width:120px; }
+.reqrow select, .reqrow input, .reqbox textarea { font:inherit; font-size:14px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text); }
+.reqbox textarea { width:100%; font-family:ui-monospace,Menlo,monospace; }
+.test { margin:8px 0; padding:8px 12px; border-radius:8px; background:var(--surface2); }
+.test.pass strong { color:var(--exercise); } .test.failed strong { color:var(--danger); }
+.why { font-size:13px; color:var(--muted); margin-top:4px; }
+.celebrate { font-weight:700; color:var(--exercise); margin-top:8px; }
+details { margin-top:10px; } summary { cursor:pointer; color:var(--muted); }
+.solution pre { background:var(--code-bg); color:var(--code-fg); padding:12px; border-radius:8px; overflow-x:auto; }
+.widget { margin:12px 0; }
+@media (max-width: 600px) { h1 { font-size:22px; } .block { padding:12px; } }
