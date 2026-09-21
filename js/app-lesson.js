@@ -14,7 +14,7 @@ async function main() {
   document.title = `INT161 ${id.toUpperCase()} — ${mod.title}`;
   const total = mod.blocks.length;
   const update = () => {
-    const n = store.doneCount(id);
+    const n = mod.blocks.filter((b) => store.isDone(id, b.id)).length;
     document.getElementById('progress-fill').style.width = `${(n / total) * 100}%`;
     document.getElementById('progress-text').textContent = `${n}/${total}`;
   };
