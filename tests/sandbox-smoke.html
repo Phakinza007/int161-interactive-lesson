@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>sandbox smoke</title>
+<pre id="out">running…</pre>
+<script type="module">
+import { createSandbox, SandboxTimeoutError } from '../engine/sandbox.js';
+
+const lines = [];
+const out = document.getElementById('out');
+const say = (ok, msg) => { lines.push((ok ? 'PASS ' : 'FAIL ') + msg); out.textContent = lines.join('\n'); };
+
+const sb = createSandbox({ timeoutMs: 1000 });
+const hello = {
+  entry: 'app.js',
+  files: { 'app.js': "const http = require('node:http');\nhttp.createServer((q, s) => { s.writeHead(200); s.end('Hello World'); }).listen(3000);\nconsole.log('up');" },
+};
+
+try {
+  const r = await sb.run(hello);
+  say(r.ok && r.logs[0].text === 'up', 'run + console.log');
+
+  const q = await sb.request({ path: '/' });
+  say(q.response && q.response.text === 'Hello World', 'request through worker');
+
+  const c = await sb.check(hello, [{ name: 'root', steps: [{ request: { path: '/' }, expect: { status: 200, text: 'Hello World' } }] }]);
+  say(c.results[0].passed === true, 'check() passes');
+
+  const c2 = await sb.check(hello, [{ name: 'root', steps: [{ request: { path: '/' }, expect: { status: 404 } }] }]);
+  say(c2.results[0].passed === false, 'check() fails wrong expectation');
+
+  const esm = await sb.run({ entry: 'm.js', files: { 'm.js': "import { x } from './l.js';\nconsole.log(x);", 'l.js': 'export const x = 5;' } });
+  say(esm.ok && esm.logs[0].text === '5', 'ESM imports in worker');
+
+  try {
+    await sb.run({ entry: 'loop.js', files: { 'loop.js': 'while (true) {}' } });
+    say(false, 'infinite loop should time out');
+  } catch (e) {
+    say(e instanceof SandboxTimeoutError, 'infinite loop times out');
+  }
+
+  const after = await sb.run(hello);
+  say(after.ok, 'sandbox recovers after a timeout');
+} catch (e) {
+  say(false, 'unexpected: ' + e.message);
+}
+lines.push(lines.some((l) => l.startsWith('FAIL')) ? 'RESULT: FAIL' : 'RESULT: ALL PASS');
+out.textContent = lines.join('\n');
+sb.dispose();
+</script>
