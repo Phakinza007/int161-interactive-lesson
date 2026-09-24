@@ -271,3 +271,18 @@ test('FK: updating a NON-key column of a referenced parent row is allowed (only 
   assert.equal(s.query("UPDATE customers SET name = 'Renamed' WHERE customerNumber = 103").header.affectedRows, 1);
   assert.equal(s.query("UPDATE employees SET email = 'new@x.com' WHERE employeeNumber = 1002").header.changedRows, 1); // referenced by 1056.reportsTo
 });
+
+test('keys work with camelCase column names: PRIMARY, UNIQUE and composite duplicates are detected', () => {
+  const server = createSqlServer({ seed: `create database d; use d;
+    create table productlines (productLine varchar(50) primary key, textDescription varchar(100));
+    create table accounts (accountId int primary key auto_increment, userName varchar(30) not null unique);
+    create table payments (customerNumber int not null, checkNumber varchar(20) not null, amount double, primary key (customerNumber, checkNumber));
+    insert into productlines values ('Classic Cars', 'x');
+    insert into accounts (userName) values ('Alice');
+    insert into payments values (103, 'HQ1', 5);` });
+  const s = server.connect({ database: 'd' });
+  rejectsWith(() => s.query("INSERT INTO productlines VALUES ('Classic Cars', 'again')"), 'ER_DUP_ENTRY', 1062, "Duplicate entry 'Classic Cars' for key 'productlines.PRIMARY'");
+  rejectsWith(() => s.query("INSERT INTO accounts (userName) VALUES ('alice')"), 'ER_DUP_ENTRY', 1062, "Duplicate entry 'alice' for key 'accounts.userName'");
+  rejectsWith(() => s.query("INSERT INTO payments VALUES (103, 'HQ1', 9)"), 'ER_DUP_ENTRY', 1062, "Duplicate entry '103-HQ1' for key 'payments.PRIMARY'");
+  assert.equal(s.query("INSERT INTO payments VALUES (104, 'HQ1', 9)").header.affectedRows, 1);
+});

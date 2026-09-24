@@ -510,6 +510,8 @@ function makeExecutor(server, session, sql, values) {
       for (const c of primary) colOf({ columns }, c, 'key list').notNull = true;
       keys.unshift({ name: 'PRIMARY', cols: primary });
     }
+    // rows are keyed by the columns' real (case-preserved) names, so resolve every key column once here
+    for (const k of keys) k.cols = k.cols.map((c) => colOf({ columns }, c, 'key list').name);
     if (db.tables.has(q.name.toLowerCase())) {
       if (ifNot) return header(0);
       throw err('ER_TABLE_EXISTS_ERROR', 1050, `Table '${q.name}' already exists`, '42S01');
