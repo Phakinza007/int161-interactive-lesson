@@ -125,3 +125,9 @@ test('onIdle(): runs once after the entry and tracked work finished, and can see
   assert.deepEqual(calls, [false]);
   assert.deepEqual(r.logs.map((l) => l.text), ['idle']);
 });
+
+test('formatArgs: an Error with extra own properties prints them Node-style', () => {
+  const e = Object.assign(new Error('File data.txt not found'), { code: 'FILE_NOT_FOUND', status: 404 });
+  assert.equal(formatArgs([e]), "Error: File data.txt not found { code: 'FILE_NOT_FOUND', status: 404 }");
+  assert.equal(formatArgs(['x', new RangeError('r')]), 'x RangeError: r');
+});

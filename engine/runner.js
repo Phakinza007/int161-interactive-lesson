@@ -4,10 +4,20 @@ import { createLoader } from './loader.js';
 import { createMysqlModules } from './mysql-sim.js';
 import { createExpressModules } from './express-sim.js';
 
+const inspectValue = (v) => {
+  if (typeof v === 'string') return `'${v}'`;
+  if (v !== null && typeof v === 'object') { try { return JSON.stringify(v); } catch { return String(v); } }
+  return String(v);
+};
+
 export function formatArgs(args) {
   return args.map((a) => {
     if (typeof a === 'string') return a;
-    if (a instanceof Error) return `${a.name}: ${a.message}`;
+    if (a instanceof Error) {
+      const extra = Object.entries(a).filter(([k]) => k !== 'stack' && k !== 'message');
+      const props = extra.length ? ` { ${extra.map(([k, v]) => `${k}: ${inspectValue(v)}`).join(', ')} }` : '';
+      return `${a.name}: ${a.message}${props}`;
+    }
     if (a !== null && typeof a === 'object') {
       try { return JSON.stringify(a); } catch { return String(a); }
     }

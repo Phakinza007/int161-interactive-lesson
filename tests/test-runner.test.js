@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runTests, runCodeChecks, deepEqual } from '../engine/test-runner.js';
+import { runTests, runCodeChecks, resolveVars, deepEqual } from '../engine/test-runner.js';
 
 const sessionOf = (routes) => ({
   request: async ({ method = 'GET', path = '/' }) => {
@@ -97,4 +97,47 @@ test('runCodeChecks without file searches every file; result shape matches runTe
   const [miss] = runCodeChecks({ 'a.js': '' }, [{ name: 'needs it', pattern: 'searchParams', message: 'ต้องใช้ searchParams' }]);
   assert.equal(miss.passed, false);
   assert.equal(miss.checks[0].message, 'ต้องใช้ searchParams');
+});
+
+test('jsonMatch is a subset match; jsonHasKeys checks presence; both fail on non-JSON bodies', async () => {
+  const s = sessionOf({
+    'GET /ok': { status: 200, json: { status: 'error', error: { code: 'X', message: 'm' }, timestamp: '2026' } },
+    'GET /html': { status: 500, text: '<pre>x</pre>' },
+  });
+  const [a] = await runTests(s, [{ name: 'a', steps: [{ request: { path: '/ok' }, expect: { jsonMatch: { status: 'error', error: { code: 'X', message: 'm' } }, jsonHasKeys: ['timestamp'] } }] }]);
+  assert.equal(a.passed, true);
+  const [b] = await runTests(s, [{ name: 'b', steps: [{ request: { path: '/ok' }, expect: { jsonMatch: { status: 'success' }, jsonHasKeys: ['nope'] } }] }]);
+  assert.equal(b.passed, false);
+  assert.equal(b.checks.filter((c) => !c.ok).length, 2);
+  const [c] = await runTests(s, [{ name: 'c', steps: [{ request: { path: '/html' }, expect: { jsonMatch: { a: 1 } } }] }]);
+  assert.equal(c.passed, false);
+  assert.match(c.checks[0].message, /ไม่ใช่ JSON/);
+});
+
+test('{{var}} in request path and body strings is filled from vars', async () => {
+  const seen = [];
+  const s = { request: async (r) => { seen.push(r); return { status: 200, headers: {}, text: '', json: undefined }; } };
+  await runTests(s, [{ name: 't', steps: [{ request: { method: 'POST', path: '/api/{{studentId}}/x', body: { note: 'id={{studentId}}', n: 5 } }, expect: { status: 200 } }] }], { studentId: '123' });
+  assert.equal(seen[0].path, '/api/123/x');
+  assert.deepEqual(seen[0].body, { note: 'id=123', n: 5 });
+});
+
+test('a test that needs a missing var returns ONE failing result with the hint and sends no requests', async () => {
+  let sent = 0;
+  const s = { request: async () => { sent++; return { status: 200, headers: {}, text: '' }; } };
+  const res = await runTests(s, [{ name: 't1', steps: [{ request: { path: '/api/{{studentId}}/x' }, expect: { status: 200 } }] }], {}, { studentId: 'ใส่รหัสนักศึกษาใน app.js' });
+  assert.equal(res.length, 1);
+  assert.equal(res[0].passed, false);
+  assert.match(res[0].checks[0].message, /ใส่รหัสนักศึกษาใน app\.js/);
+  assert.equal(sent, 0);
+  // vars that no test uses do not block anything
+  const ok = await runTests({ request: async () => ({ status: 200, headers: {}, text: '' }) }, [{ name: 't', steps: [{ request: { path: '/x' }, expect: { status: 200 } }] }], {}, {});
+  assert.equal(ok[0].passed, true);
+});
+
+test('resolveVars reads the learner\'s own value with a regex, ignoring comments; empty or missing → undefined', () => {
+  const spec = { studentId: { file: 'app.js', pattern: "STUDENT_ID\\s*=\\s*['\"](\\d+)['\"]" } };
+  assert.deepEqual(resolveVars({ 'app.js': "const STUDENT_ID = '66011234';" }, spec), { studentId: '66011234' });
+  assert.deepEqual(resolveVars({ 'app.js': "// const STUDENT_ID = '11111111';\nconst STUDENT_ID = '';" }, spec), { studentId: undefined });
+  assert.deepEqual(resolveVars({ 'other.js': "const STUDENT_ID = '5';" }, spec), { studentId: undefined });
 });

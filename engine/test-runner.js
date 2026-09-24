@@ -11,7 +11,36 @@ const show = (v) => {
   try { return JSON.stringify(v); } catch { return String(v); }
 };
 
-export async function runTests(session, tests) {
+const VAR_RE = /\{\{(\w+)\}\}/g;
+const fillVars = (v, vars) => {
+  if (typeof v === 'string') return v.replace(VAR_RE, (m, k) => (vars[k] !== undefined && vars[k] !== '' ? vars[k] : m));
+  if (Array.isArray(v)) return v.map((x) => fillVars(x, vars));
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fillVars(x, vars)]));
+  return v;
+};
+
+// vars come from the learner's own code (e.g. a student id); tests refer to them as {{name}}
+export function resolveVars(files, spec) {
+  const out = {};
+  for (const [name, def] of Object.entries(spec || {})) {
+    const src = def.file ? files[def.file] : Object.values(files).join('\n');
+    const m = src === undefined ? null : new RegExp(def.pattern).exec(stripComments(src));
+    out[name] = m && m[1] ? m[1] : undefined;
+  }
+  return out;
+}
+
+export async function runTests(session, tests, vars = {}, hints = {}) {
+  const needed = new Set([...JSON.stringify(tests).matchAll(VAR_RE)].map((m) => m[1]));
+  const missing = [...needed].filter((k) => vars[k] === undefined || vars[k] === '');
+  if (missing.length) {
+    return [{
+      name: 'ต้องกำหนดค่าก่อนตรวจ',
+      passed: false,
+      checks: missing.map((k) => ({ label: `{{${k}}}`, ok: false, message: hints[k] || `ยังไม่ได้กำหนดค่า ${k} ในโค้ด` })),
+    }];
+  }
+  tests = fillVars(tests, vars);
   const results = [];
   for (const t of tests) {
     const checks = [];
@@ -29,6 +58,17 @@ export async function runTests(session, tests) {
       const ex = step.expect || {};
       if ('status' in ex) add('status', res.status === ex.status, res.status, ex.status);
       if ('json' in ex) add('json', deepEqual(res.json, ex.json), show(res.json), show(ex.json));
+      if ('jsonMatch' in ex) {
+        const isObj = res.json !== null && typeof res.json === 'object';
+        const ok = isObj && Object.entries(ex.jsonMatch).every(([k, v]) => deepEqual(res.json[k], v));
+        checks.push({ label: `${label} → json (บางส่วน)`, ok, message: ok ? '' : isObj ? `ได้ ${show(res.json)} คาดหวังให้มี ${show(ex.jsonMatch)}` : `response ไม่ใช่ JSON (ได้ ${show(res.text.slice(0, 80))})` });
+      }
+      if ('jsonHasKeys' in ex) {
+        const isObj = res.json !== null && typeof res.json === 'object';
+        const lacking = isObj ? ex.jsonHasKeys.filter((k) => !(k in res.json)) : ex.jsonHasKeys;
+        const ok = isObj && lacking.length === 0;
+        checks.push({ label: `${label} → json keys`, ok, message: ok ? '' : isObj ? `ไม่มี key: ${lacking.join(', ')}` : `response ไม่ใช่ JSON` });
+      }
       if ('text' in ex) add('text', res.text === ex.text, show(res.text), show(ex.text));
       if ('textIncludes' in ex) {
         add('text includes', res.text.includes(ex.textIncludes), show(res.text), `มีคำว่า ${show(ex.textIncludes)}`);
@@ -53,7 +93,7 @@ export async function runTests(session, tests) {
   return results;
 }
 
-const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+export const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 export function runCodeChecks(files, checks) {
   return checks.map((c) => {

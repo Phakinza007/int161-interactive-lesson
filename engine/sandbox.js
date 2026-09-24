@@ -53,7 +53,7 @@ export function createSandbox({ timeoutMs = 3000, workerUrl = new URL('./worker.
 
   return {
     run(payload) { terminate(); return call('run', { payload }); },
-    check(payload, tests, codeChecks = []) { terminate(); return call('check', { payload, tests, codeChecks }); },
+    check(payload, tests, codeChecks = [], vars = {}) { terminate(); return call('check', { payload, tests, codeChecks, vars }); },
     request(req) { return call('request', { req }); },
     dispose: terminate,
   };

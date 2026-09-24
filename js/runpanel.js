@@ -78,7 +78,7 @@ export function createRunPanel({ block, moduleId, store, onDone }) {
   async function check() {
     reqBox.hidden = true;
     try {
-      const r = await sandbox.check(payload(), block.tests, block.codeChecks || []);
+      const r = await sandbox.check(payload(), block.tests, block.codeChecks || [], block.vars || {});
       showLogs(r.run.logs, r.run.error);
       const all = r.run.ok && r.results.length > 0 && r.results.every((t) => t.passed);
       const rows = r.results.map((t) => h('div', { class: 'test ' + (t.passed ? 'pass' : 'failed') },

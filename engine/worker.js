@@ -1,5 +1,5 @@
 import { runProject } from './runner.js';
-import { runTests, runCodeChecks } from './test-runner.js';
+import { runTests, runCodeChecks, resolveVars } from './test-runner.js';
 
 let session = null;
 
@@ -18,7 +18,9 @@ self.onmessage = async ({ data }) => {
       const r = await runProject(data.payload);
       session = r.session;
       const codeResults = runCodeChecks(data.payload.files, data.codeChecks || []);
-      const testResults = r.ok ? await runTests(session, data.tests) : [];
+      const spec = data.vars || {};
+      const hints = Object.fromEntries(Object.entries(spec).map(([k, d]) => [k, d.hint]));
+      const testResults = r.ok ? await runTests(session, data.tests, resolveVars(data.payload.files, spec), hints) : [];
       const results = [...codeResults, ...testResults];
       reply(id, { run: snapshot(r), results });
     } else if (type === 'request') {
