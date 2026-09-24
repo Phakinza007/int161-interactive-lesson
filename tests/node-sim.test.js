@@ -84,3 +84,11 @@ test('async rejection from h1 still rejects the request when h2 exists', async (
   server.listen(3000);
   await assert.rejects(network.request({}), /async boom/);
 });
+
+test('ENOENT errors carry a short Node-like stack (no simulator internals)', () => {
+  const { m } = setup();
+  try { m.fs.readFileSync('test.txt'); } catch (e) {
+    assert.match(e.stack, /^Error: ENOENT: no such file or directory, open 'test\.txt'\n    at Object\.readFileSync \(node:fs\)/);
+    assert.ok(!/engine\/|node-sim/.test(e.stack));
+  }
+});

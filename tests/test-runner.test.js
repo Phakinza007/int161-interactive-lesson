@@ -141,3 +141,12 @@ test('resolveVars reads the learner\'s own value with a regex, ignoring comments
   assert.deepEqual(resolveVars({ 'app.js': "// const STUDENT_ID = '11111111';\nconst STUDENT_ID = '';" }, spec), { studentId: undefined });
   assert.deepEqual(resolveVars({ 'other.js': "const STUDENT_ID = '5';" }, spec), { studentId: undefined });
 });
+
+test('jsonMatch / jsonHasKeys accept dotted paths for nested values', async () => {
+  const s = sessionOf({ 'GET /e': { status: 404, json: { status: 'error', error: { code: 'OFFICE_NOT_FOUND', message: "Office with code '99' was not found" }, data: { list: [1] } } } });
+  const [ok] = await runTests(s, [{ name: 'ok', steps: [{ request: { path: '/e' }, expect: { jsonMatch: { status: 'error', 'error.code': 'OFFICE_NOT_FOUND' }, jsonHasKeys: ['error.message', 'data.list'] } }] }]);
+  assert.equal(ok.passed, true);
+  const [bad] = await runTests(s, [{ name: 'bad', steps: [{ request: { path: '/e' }, expect: { jsonMatch: { 'error.code': 'OTHER' }, jsonHasKeys: ['error.nope'] } }] }]);
+  assert.equal(bad.passed, false);
+  assert.equal(bad.checks.filter((c) => !c.ok).length, 2);
+});

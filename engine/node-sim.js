@@ -39,6 +39,7 @@ function enoent(path) {
   e.errno = -2;
   e.syscall = 'open';
   e.path = path;
+  e.stack = `Error: ${e.message}\n    at Object.readFileSync (node:fs)\n    at (stack trace ย่อโดย simulator)`;
   return e;
 }
 

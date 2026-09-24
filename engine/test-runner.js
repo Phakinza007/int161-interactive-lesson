@@ -11,6 +11,9 @@ const show = (v) => {
   try { return JSON.stringify(v); } catch { return String(v); }
 };
 
+const getPath = (obj, path) => path.split('.').reduce((o, k) => (o !== null && typeof o === 'object' ? o[k] : undefined), obj);
+const hasPath = (obj, path) => path.split('.').every((_, i, a) => { const parent = a.slice(0, i).reduce((o, k) => (o == null ? o : o[k]), obj); return parent !== null && typeof parent === 'object' && a[i] in parent; });
+
 const VAR_RE = /\{\{(\w+)\}\}/g;
 const fillVars = (v, vars) => {
   if (typeof v === 'string') return v.replace(VAR_RE, (m, k) => (vars[k] !== undefined && vars[k] !== '' ? vars[k] : m));
@@ -60,12 +63,12 @@ export async function runTests(session, tests, vars = {}, hints = {}) {
       if ('json' in ex) add('json', deepEqual(res.json, ex.json), show(res.json), show(ex.json));
       if ('jsonMatch' in ex) {
         const isObj = res.json !== null && typeof res.json === 'object';
-        const ok = isObj && Object.entries(ex.jsonMatch).every(([k, v]) => deepEqual(res.json[k], v));
+        const ok = isObj && Object.entries(ex.jsonMatch).every(([k, v]) => deepEqual(getPath(res.json, k), v));
         checks.push({ label: `${label} → json (บางส่วน)`, ok, message: ok ? '' : isObj ? `ได้ ${show(res.json)} คาดหวังให้มี ${show(ex.jsonMatch)}` : `response ไม่ใช่ JSON (ได้ ${show(res.text.slice(0, 80))})` });
       }
       if ('jsonHasKeys' in ex) {
         const isObj = res.json !== null && typeof res.json === 'object';
-        const lacking = isObj ? ex.jsonHasKeys.filter((k) => !(k in res.json)) : ex.jsonHasKeys;
+        const lacking = isObj ? ex.jsonHasKeys.filter((k) => !hasPath(res.json, k)) : ex.jsonHasKeys;
         const ok = isObj && lacking.length === 0;
         checks.push({ label: `${label} → json keys`, ok, message: ok ? '' : isObj ? `ไม่มี key: ${lacking.join(', ')}` : `response ไม่ใช่ JSON` });
       }
