@@ -48,4 +48,10 @@ Exercises (9): `x-hello-express`, `x-params` (params + query + body echo exactly
 
 ## Execution notes
 
-(filled in while running)
+Found while running; Plan 5 (W6) inherits these.
+
+1. **Express 5 semantics implemented and tested (`tests/express-sim.test.js`, 18 tests):** async/sync errors reach 4-argument handlers; an error handler registered before the routes does not catch (falls to the default page); normal middleware is skipped while an error is pending and error handlers are skipped otherwise; `res.json` → `application/json; charset=utf-8`; `res.status()` alone never sends; 204/304 strip the body; default pages match real Express (`Cannot GET /x`, escaped `<pre>` error page with `X-Content-Type-Options`/CSP headers; quotes are HTML-escaped so `next('route')` shows as `next(&#39;route&#39;)`).
+2. **Request body timing:** the in-memory network emits `data`/`end` on a timer after the handler returns, so `express.json()` (and any `req.on('data')` code) must attach listeners synchronously in the middleware chain — true for every lesson.
+3. **`net-sim` exports `STATUS_TEXT`;** `runProject` auto-registers `express` next to the MySQL modules.
+4. **Content:** W5's logger example comes from the W6 slides (block `source` says so); `mysql2`/DB password from the W6 template is never copied (placeholder only). Shared DB seed is exported as `SEED_SQL` from `content/w4-labs.js`.
+5. **Verified live:** 5/5 experiments (incl. the `res.status(201)` hang and the default 404 page), 9/9 exercises fail→pass, no console errors.
