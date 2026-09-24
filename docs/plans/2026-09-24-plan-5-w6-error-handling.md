@@ -47,4 +47,15 @@ Exercises (10): slide-based with solutions — `x-try-catch`, `x-app-error`, `x-
 
 ## Execution notes
 
-(filled in while running)
+Found while running; this is the last module plan.
+
+1. **Foreign keys (RESTRICT) implemented** in `engine/sql-engine.js` with MySQL's exact 1451/1452/1824/3730 messages and `<table>_ibfk_<n>` constraint names; column-level `REFERENCES` is parsed but ignored (as in MySQL); `ON DELETE/UPDATE` is `SIM_UNSUPPORTED_SQL`. Bug caught by a review of my own change: updating a *non-key* column of a referenced parent row wrongly raised 1451 — fixed (only changes to the referenced key columns are restricted), with a regression test.
+2. **The assignment proof step found a real engine bug:** duplicate detection silently failed for camelCase column names (`productLine`, `checkNumber`) because key columns were looked up lower-cased in case-preserving row objects. Fixed by resolving key columns to their real names at `CREATE TABLE`; regression test added. Lesson: prove checkers against a real solution — here it caught a bug that 200+ other tests could not.
+3. **Assignment self-check without solutions (verified):** the five `x-a*` blocks have no `solution`; a reference solution existed only in the session scratchpad, passed all 5 checkers (incl. the empty-ID message and detection of a `:studentId` route), and was deleted. `git grep` finds no assignment answer code. Learners type their own student ID into `app.js`; `{{studentId}}` in test paths is filled from that text at check time.
+4. **Test-runner additions:** `expect.jsonMatch` / `jsonHasKeys` (dotted paths such as `error.code`), `{{var}}` substitution with `block.vars`, `resolveVars`, and a single explanatory failing result when a needed variable is missing. `formatArgs(Error)` prints extra own properties Node-style; ENOENT errors carry a short Node-like stack.
+5. **Example student id removed:** the brief's sample id had been copied into a concept block and a unit test; both now use placeholders.
+6. **Verified live:** 5/5 experiments (try/catch, custom error, error middleware incl. handler-before-routes → default HTML, layered errors 404 + ER_DUP_ENTRY→409, FK errors in the SQL console), 5/5 slide exercises fail→pass, assignment blocks behave as designed, no console errors.
+
+## Diagrams (added after the module plans, on the user's request)
+
+`js/diagrams.js` (pure SVG string builders `flow`, `sequence`, `stack`; theme colours come from CSS classes; `tests/diagrams.test.js` + a per-module well-formedness test) and 21 diagrams on concept blocks across W1–W6 (`diagram` + `diagramCaption` on a block). Findings while checking them in the browser: (a) SVGs shrank to unreadable text on phones → each keeps a readable `min-width` and scrolls inside its frame; (b) sequence notes overflowed the canvas → clamped; (c) my `render.js` change passed `null` to `append()` and printed the text "null" on blocks without a diagram → fixed with `.filter(Boolean)`; (d) two pages overflowed at 375 px because of long inline `<code>` (a URL, a route) → global CSS wrap rule for inline code.

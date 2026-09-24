@@ -132,7 +132,7 @@ export const concepts = {
       <tr><td><code>ER_NO_REFERENCED_ROW_2</code> (1452)</td><td>foreign key ที่อ้างถึงไม่มีจริง</td><td>400 <code>FOREIGN_KEY_NOT_FOUND</code></td></tr>
       <tr><td><code>ER_ROW_IS_REFERENCED_2</code> (1451)</td><td>ลบ/แก้แถวที่ถูกอ้างอิงอยู่</td><td>409 <code>RESOURCE_IN_USE</code></td></tr></table>
       <p><b>งานส่ง (แบบฝึกหัด CRUD + Centralized Exception Handling)</b> — 5 โจทย์ในโมดูลนี้คือ<b>ตัวตรวจอัตโนมัติ</b>ให้ทดสอบงานของตัวเอง:</p>
-      <ul><li>ต้อง<b>ระบุรหัสนักศึกษาของตนเองใน path โดยตรง</b> (เช่น <code>/api/66011234/offices</code>) — ห้ามใช้ route parameter <code>:studentId</code></li>
+      <ul><li>ต้อง<b>ระบุรหัสนักศึกษาของตนเองใน path โดยตรง</b> (เช่น <code>/api/&lt;รหัสนักศึกษา&gt;/offices</code>) — ห้ามใช้ route parameter <code>:studentId</code></li>
       <li>response ต้องเป็น JSON มาตรฐาน <code>status/data/error</code> ห้ามหลุดเป็นหน้า HTML error ของ Express</li>
       <li>ใน controller ใช้ <code>next(err)</code> ส่ง error มาที่ error middleware กลางจุดเดียว</li></ul>
       <p class="muted">เว็บนี้<b>ไม่มีเฉลย</b>ของงานส่ง — มีแต่ตัวตรวจ · รหัสนักศึกษาที่คุณพิมพ์ในโค้ดเก็บอยู่ในเบราว์เซอร์ของคุณเท่านั้น ไม่ถูกส่งไปที่ใด · ข้อมูลตัวอย่างในตัวจำลองเป็นชุดเล็กที่สร้างขึ้นเองเพื่อฝึก ไม่ใช่ฐานข้อมูลจริง</p>`,

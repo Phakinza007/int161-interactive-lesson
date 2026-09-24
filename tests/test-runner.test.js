@@ -137,7 +137,7 @@ test('a test that needs a missing var returns ONE failing result with the hint a
 
 test('resolveVars reads the learner\'s own value with a regex, ignoring comments; empty or missing → undefined', () => {
   const spec = { studentId: { file: 'app.js', pattern: "STUDENT_ID\\s*=\\s*['\"](\\d+)['\"]" } };
-  assert.deepEqual(resolveVars({ 'app.js': "const STUDENT_ID = '66011234';" }, spec), { studentId: '66011234' });
+  assert.deepEqual(resolveVars({ 'app.js': "const STUDENT_ID = '12345678';" }, spec), { studentId: '12345678' });
   assert.deepEqual(resolveVars({ 'app.js': "// const STUDENT_ID = '11111111';\nconst STUDENT_ID = '';" }, spec), { studentId: undefined });
   assert.deepEqual(resolveVars({ 'other.js': "const STUDENT_ID = '5';" }, spec), { studentId: undefined });
 });
