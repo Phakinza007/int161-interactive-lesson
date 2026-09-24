@@ -1,5 +1,5 @@
 import { runProject } from './runner.js';
-import { runTests } from './test-runner.js';
+import { runTests, runCodeChecks } from './test-runner.js';
 
 let session = null;
 
@@ -17,7 +17,9 @@ self.onmessage = async ({ data }) => {
     } else if (type === 'check') {
       const r = await runProject(data.payload);
       session = r.session;
-      const results = r.ok ? await runTests(session, data.tests) : [];
+      const codeResults = runCodeChecks(data.payload.files, data.codeChecks || []);
+      const testResults = r.ok ? await runTests(session, data.tests) : [];
+      const results = [...codeResults, ...testResults];
       reply(id, { run: snapshot(r), results });
     } else if (type === 'request') {
       if (!session) throw new Error('ยังไม่ได้ Run โค้ด');

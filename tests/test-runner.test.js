@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { runTests, deepEqual } from '../engine/test-runner.js';
+import { runTests, runCodeChecks, deepEqual } from '../engine/test-runner.js';
 
 const sessionOf = (routes) => ({
   request: async ({ method = 'GET', path = '/' }) => {
@@ -52,4 +52,49 @@ test('multiple steps run in order and all must pass', async () => {
   ] }]);
   assert.equal(r.passed, false);
   assert.deepEqual(r.checks.map((c) => c.ok), [true, false]);
+});
+
+test('textExcludes passes when the text lacks the word and fails when it has it', async () => {
+  const s = sessionOf({ 'GET /': { status: 200, text: 'INT101 INT102' } });
+  const [ok] = await runTests(s, [{ name: 'a', steps: [{ request: { path: '/' }, expect: { textExcludes: 'INT100' } }] }]);
+  const [bad] = await runTests(s, [{ name: 'b', steps: [{ request: { path: '/' }, expect: { textExcludes: 'INT101' } }] }]);
+  assert.equal(ok.passed, true);
+  assert.equal(bad.passed, false);
+  assert.match(bad.checks[0].message, /INT101/);
+});
+
+test('logIncludes checks console output; a test may have no steps', async () => {
+  const s = { ...sessionOf({}), logs: [{ level: 'log', text: 'duplicate: false' }, { level: 'log', text: 'fresh: {"id":"X"}' }] };
+  const [ok, bad] = await runTests(s, [
+    { name: 'logs ok', steps: [], logIncludes: ['duplicate: false', 'fresh: {"id":"X"}'] },
+    { name: 'logs bad', steps: [], logIncludes: ['duplicate: true'] },
+  ]);
+  assert.equal(ok.passed, true);
+  assert.equal(bad.passed, false);
+  assert.match(bad.checks[0].message, /duplicate: true/);
+});
+
+test('runCodeChecks: mustMatch default, mustMatch:false, comments ignored, file scoping', () => {
+  const files = {
+    'router.js': "// import * as repo from './repositories/x.js'\nimport * as service from './services/s.js';\n/* require('x') */",
+    'other.js': "import * as repo from './repositories/x.js';",
+  };
+  const results = runCodeChecks(files, [
+    { name: 'uses service', file: 'router.js', pattern: 'services/s\\.js' },
+    { name: 'no repo in router', file: 'router.js', pattern: 'repositories/', mustMatch: false },
+    { name: 'no require in router', file: 'router.js', pattern: 'require\\(', mustMatch: false },
+  ]);
+  assert.equal(results.length, 3); // one result row per check
+  assert.deepEqual(results.map((r) => r.passed), [true, true, true]);
+  const [bad] = runCodeChecks(files, [{ name: 'no repo in other', file: 'other.js', pattern: 'repositories/', mustMatch: false }]);
+  assert.equal(bad.passed, false);
+});
+
+test('runCodeChecks without file searches every file; result shape matches runTests', () => {
+  const [r] = runCodeChecks({ 'a.js': 'x.searchParams', 'b.js': '' }, [{ name: 'uses searchParams', pattern: 'searchParams' }]);
+  assert.deepEqual(Object.keys(r), ['name', 'passed', 'checks']);
+  assert.equal(r.passed, true);
+  const [miss] = runCodeChecks({ 'a.js': '' }, [{ name: 'needs it', pattern: 'searchParams', message: 'ต้องใช้ searchParams' }]);
+  assert.equal(miss.passed, false);
+  assert.equal(miss.checks[0].message, 'ต้องใช้ searchParams');
 });
