@@ -82,6 +82,112 @@ export const WIDGETS = {
       h('div', { class: 'flowgrid' }, mpaBox, spaBox));
   },
 
+  'event-loop'(host) {
+    let seq = 0;
+    let queue = [];
+    let loop = null;
+    let threads = [];
+    let done = [];
+    let log = [];
+    const lanes = h('div', { class: 'lanes' });
+    const logBox = h('div', { class: 'output' });
+    const say = (t) => { log.push(t); if (log.length > 8) log.shift(); };
+    const label = (r) => `#${r.id} ${r.kind === 'blocking' ? 'blocking' : 'non-blocking'}`;
+    const chips = (list) => list.map((r) => h('span', { class: `node ${r.kind}` }, label(r)));
+    const lane = (title, list, note) => h('div', { class: 'lane' }, h('h4', {}, title), h('div', { class: 'chain' }, ...chips(list)), h('div', { class: 'muted' }, note));
+    const paint = () => {
+      lanes.replaceChildren(
+        lane('Event Queue', queue, 'request เข้าคิวรอ'),
+        lane('Event Loop', loop ? [loop] : [], 'ประมวลผลทีละตัว'),
+        lane('Work Threads', threads, 'งาน blocking (file system, network, process)'),
+        lane('ตอบกลับแล้ว', done.slice(-4), 'response ส่งกลับ client'));
+      logBox.replaceChildren(...log.map((t) => h('div', { class: 'log' }, t)));
+      if (!log.length) logBox.replaceChildren();
+    };
+    const add = (kind) => { const r = { id: ++seq, kind }; queue.push(r); say(`request ${label(r)} เข้า Event Queue`); paint(); };
+    const tick = () => {
+      if (loop) {
+        const r = loop;
+        if (r.kind === 'non-blocking' || r.phase === 'callback') {
+          done.push(r); say(`Event Loop ส่ง response ของ ${label(r)} กลับ client`);
+        } else {
+          r.phase = 'threads'; threads.push(r); say(`${label(r)} เป็นงาน blocking → ส่งให้ Work Threads`);
+        }
+        loop = null;
+      } else if (threads.length) {
+        loop = threads.shift(); loop.phase = 'callback';
+        say(`Work Thread ทำ ${label(loop)} เสร็จ → callback กลับเข้า Event Loop`);
+      } else if (queue.length) {
+        loop = queue.shift(); loop.phase = 'first';
+        say(loop.kind === 'non-blocking'
+          ? `Event Loop รับ ${label(loop)} — ง่ายพอ ประมวลผลเอง (เช่น I/O polling)`
+          : `Event Loop รับ ${label(loop)} — ต้องใช้ทรัพยากรภายนอก`);
+      } else {
+        say('ไม่มี request ค้างอยู่');
+      }
+      if (log.length > 8) log.shift();
+      paint();
+    };
+    host.append(
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn', onclick: () => add('non-blocking') }, 'ส่ง request แบบ non-blocking'),
+        h('button', { class: 'btn', onclick: () => add('blocking') }, 'ส่ง request แบบ blocking'),
+        h('button', { class: 'btn primary', onclick: tick }, 'ขั้นถัดไป'),
+        h('button', { class: 'btn', onclick: () => { queue = []; loop = null; threads = []; done = []; log = []; seq = 0; paint(); } }, 'เริ่มใหม่')),
+      lanes, logBox);
+    paint();
+  },
+
+  'url-anatomy'(host) {
+    const PARTS = ['Protocol', 'Host (domain name)', 'Port', 'Application Context', 'Version', 'Resource', 'Parameter'];
+    const RE = /^(\w+:\/\/)([^:/\s]+)(?::(\d+))?\/([^/\s]+)\/(v\d+)\/([^/\s]+)(?:\/(\S*))?$/;
+    const input = h('input', { type: 'text', value: 'http://localhost:9999/restfulservices/v1/users/5', 'aria-label': 'URL', class: 'urlinput' });
+    const out = h('div', {});
+    const paint = () => {
+      const m = RE.exec(input.value.trim());
+      if (!m) {
+        out.replaceChildren(h('p', { class: 'muted' }, 'รูปแบบที่ใช้: http://host:port/context/v1/resource/parameter เช่น http://localhost:9999/restfulservices/v1/users/5'));
+        return;
+      }
+      const vals = m.slice(1, 8).map((v) => v ?? '');
+      const rows = PARTS.map((p, i) => h('tr', { class: i >= 3 ? 'in-endpoint' : '' }, h('td', {}, p), h('td', {}, h('code', {}, vals[i] || '—'))));
+      out.replaceChildren(
+        h('table', { class: 'urltable' }, ...rows),
+        h('p', { class: 'muted' }, `Restful Endpoint = ${vals.slice(3).filter(Boolean).join('/')} (ตั้งแต่ Application Context ไปจนจบ)`));
+    };
+    input.addEventListener('input', paint);
+    host.append(input, out);
+    paint();
+  },
+
+  'verb-quiz'(host, block) {
+    const rows = block.data;
+    const pick = (i) => {
+      const others = rows.filter((_, j) => j !== i).map((r) => r.meaning);
+      const opts = [rows[i].meaning, others[i % others.length], others[(i + 2) % others.length]];
+      return [...new Set(opts)].sort((a, b) => (a < b ? -1 : 1));
+    };
+    let correct = 0;
+    const answered = new Set();
+    const score = h('div', { class: 'muted' });
+    const paintScore = () => { score.textContent = `ตอบถูก ${correct}/${rows.length}`; };
+    const list = rows.map((r, i) => {
+      const fb = h('span', { class: 'fb' });
+      const opts = pick(i).map((m) => h('button', { class: 'chip', onclick: () => {
+        if (answered.has(i)) return;
+        answered.add(i);
+        const ok = m === r.meaning;
+        if (ok) correct++;
+        fb.textContent = ok ? '✓ ถูก' : `✗ ที่ถูกคือ: ${r.meaning}`;
+        fb.className = 'fb ' + (ok ? 'ok' : 'bad');
+        paintScore();
+      } }, m));
+      return h('div', { class: 'quizrow' }, h('div', {}, h('code', {}, `${r.verb} ${r.uri}`)), h('div', { class: 'chips' }, ...opts), fb);
+    });
+    paintScore();
+    host.append(...list, score);
+  },
+
   'translator-sim'(host) {
     let mode = 'compile';
     let bad = false;

@@ -22,13 +22,13 @@ class Server extends EventEmitter {
     });
     this.listening = true;
     const cb = rest.find((a) => typeof a === 'function');
-    if (cb) setTimeout(cb, 0);
+    if (cb) queueMicrotask(cb); // before the entry run resolves, so its console output is in the first snapshot
     return this;
   }
   close(cb) {
     if (this.#port !== null) this.#network.close(this.#port);
     this.listening = false;
-    if (typeof cb === 'function') setTimeout(cb, 0);
+    if (typeof cb === 'function') queueMicrotask(cb);
     return this;
   }
 }

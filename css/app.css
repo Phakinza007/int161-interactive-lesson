@@ -98,3 +98,14 @@ details { margin-top:10px; } summary { cursor:pointer; color:var(--muted); }
 .flowcol { padding:12px; border:1px solid var(--border); border-radius:10px; text-align:center; }
 .flowcol h4 { margin:0; } .big { font-size:40px; font-weight:800; color:var(--experiment); line-height:1.2; }
 @media (max-width: 600px) { .evallabel { flex-basis:120px; font-size:13px; } }
+
+.lanes { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin:10px 0; }
+.lane { border:1px solid var(--border); border-radius:10px; padding:8px 10px; min-height:96px; }
+.lane h4 { margin:0 0 6px; font-size:14px; }
+.node.blocking { border-color:var(--experiment); }
+.urlinput { width:100%; font:inherit; font-family:ui-monospace,Menlo,monospace; font-size:14px; padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); }
+.urltable { border-collapse:collapse; margin-top:10px; width:100%; }
+.urltable td { border:1px solid var(--border); padding:4px 10px; }
+.urltable tr.in-endpoint td { background:color-mix(in srgb, var(--exercise) 14%, transparent); }
+.quizrow { padding:8px 0; border-bottom:1px dashed var(--border); }
+.fb { font-size:13px; margin-left:4px; } .fb.ok { color:var(--exercise); } .fb.bad { color:var(--danger); }

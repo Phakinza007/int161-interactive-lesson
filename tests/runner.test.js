@@ -88,3 +88,9 @@ test('fixtures.responseTimeoutMs overrides the default response timeout', async 
   await assert.rejects(r.session.request({}), /res\.end/);
   assert.ok(Date.now() - t0 < 200, `took ${Date.now() - t0} ms`);
 });
+
+test('server.listen callback output is captured by the initial run (slides log inside the callback)', async () => {
+  const src = "const http = require('node:http');\nhttp.createServer((q, s) => s.end('x')).listen(3000, () => { console.log('Server running'); });";
+  const r = await runProject({ files: { 'a.js': src }, entry: 'a.js' });
+  assert.deepEqual(r.logs.map((l) => l.text), ['Server running']);
+});
