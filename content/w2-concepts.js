@@ -1,10 +1,53 @@
+import { flow, sequence, stack } from '../js/diagrams.js';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const code = (s) => `<pre><code>${esc(s)}</code></pre>`;
 const SRC = 'week2/W02-http-programming-basics.md';
 
+const DG = {
+  cycle: sequence({
+    title: 'วงจร request / response ของ Web Application', gap: 340,
+    actors: [{ id: 'b', label: 'Browser' }, { id: 's', label: 'Web Server\n(Node.js)' }],
+    steps: [
+      { from: 'b', to: 's', label: 'GET /path HTTP/1.1  +  Host: host:port' },
+      { note: 'แปลง URL เป็นไฟล์/โปรแกรม แล้วโปรแกรมของเราอ่าน request เป็น input', at: 's' },
+      { from: 's', to: 'b', label: 'HTTP/1.1 200 OK  +  body', dashed: true },
+      { note: 'จัดรูปแบบ response แล้วแสดงผล', at: 'b' },
+    ],
+  }),
+  arch: flow({
+    title: 'Node.js: Event Queue, Event Loop และ Work Threads', nodeW: 132, gapX: 44,
+    nodes: [
+      { id: 'cl', label: 'Client', sub: 'ส่ง request', col: 0, row: 0 },
+      { id: 'q', label: 'Event Queue', sub: 'ต่อคิว', col: 1, row: 0, tone: 'concept' },
+      { id: 'el', label: 'Event Loop', sub: 'ทีละตัว', col: 2, row: 0, tone: 'concept' },
+      { id: 'rs', label: 'Response', sub: 'กลับไปหา client', col: 3, row: 0, tone: 'exercise' },
+      { id: 'wt', label: 'Work Threads', sub: 'fs · network · process', col: 2, row: 1, tone: 'experiment' },
+    ],
+    edges: [
+      { from: 'cl', to: 'q' }, { from: 'q', to: 'el' }, { from: 'el', to: 'rs', label: 'non-blocking' },
+      { from: 'el', to: 'wt', label: 'blocking' }, { from: 'wt', to: 'el', label: 'callback', dashed: true },
+    ],
+  }),
+  classes: flow({
+    title: 'คลาสหลักของโมดูล http', nodeW: 150, gapX: 56,
+    nodes: [
+      { id: 'srv', label: 'http.Server', sub: 'listen · close', col: 0, row: 0, tone: 'concept' },
+      { id: 'inc', label: 'IncomingMessage', sub: 'method · url · headers', col: 1, row: 0 },
+      { id: 'res', label: 'ServerResponse', sub: 'writeHead · write · end', col: 1, row: 1, tone: 'exercise' },
+      { id: 'req', label: 'http.request()', col: 0, row: 2 },
+      { id: 'cr', label: 'ClientRequest', sub: 'write · end', col: 1, row: 2, tone: 'experiment' },
+      { id: 'inc2', label: 'IncomingMessage', sub: 'response ของ client', col: 2, row: 2 },
+    ],
+    edges: [
+      { from: 'srv', to: 'inc', label: "event 'request'" }, { from: 'srv', to: 'res' },
+      { from: 'req', to: 'cr' }, { from: 'cr', to: 'inc2', label: "event 'response'" },
+    ],
+  }),
+};
+
 export const concepts = {
   webHttp: {
-    type: 'concept', id: 'c-web-http', title: 'Web Application กับ HTTP และวงจร request/response',
+    type: 'concept', id: 'c-web-http', diagram: DG.cycle, diagramCaption: 'วงจร request/response ทั้งห้าขั้น', title: 'Web Application กับ HTTP และวงจร request/response',
     source: `${SRC} §Unit Objectives, §01 Web Application กับ HTTP`,
     body: `<p><b>เมื่อจบบทนี้ควรทำได้:</b></p>
       <ul><li>อธิบาย HTTP protocol สำหรับการเขียนเว็บได้</li><li>สร้าง HTTP Server ด้วย Node.js ได้</li>
@@ -22,7 +65,7 @@ export const concepts = {
   },
 
   nodeArch: {
-    type: 'concept', id: 'c-node-arch', title: 'Node.js Architecture: Event Queue, Event Loop, Work Threads',
+    type: 'concept', id: 'c-node-arch', diagram: DG.arch, diagramCaption: 'request แบบ non-blocking ตอบทันที ส่วน blocking ไปที่ Work Threads แล้ว callback กลับเข้า Event Loop', title: 'Node.js Architecture: Event Queue, Event Loop, Work Threads',
     source: `${SRC} §02 Node.js Architecture`,
     body: `<ol><li>Client ส่ง request มาที่ web server — request มีทั้งแบบ <b>non-blocking</b> และ <b>blocking</b> เช่น query, update หรือลบข้อมูล</li>
       <li>Node.js รับ request แล้วนำไปต่อคิวใน <b>Event Queue</b></li>
@@ -65,7 +108,7 @@ export const concepts = {
   },
 
   httpClasses: {
-    type: 'concept', id: 'c-http-classes', title: 'คลาสหลัก 4 ตัวของโมดูล http',
+    type: 'concept', id: 'c-http-classes', diagram: DG.classes, diagramCaption: 'ความสัมพันธ์ของคลาสหลักทั้งสี่', title: 'คลาสหลัก 4 ตัวของโมดูล http',
     source: `${SRC} §05 HTTP Module Core Classes`,
     body: `<p><b>http.Server</b> — instance ของ HTTP server</p>
       <ul><li><code>server.listen(port, callback)</code> เริ่มรอรับ connection</li><li><code>server.close(callback)</code> หยุดรับ connection ใหม่</li>

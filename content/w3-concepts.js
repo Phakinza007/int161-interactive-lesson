@@ -1,10 +1,36 @@
+import { flow, sequence, stack } from '../js/diagrams.js';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const code = (s) => `<pre><code>${esc(s)}</code></pre>`;
 const SRC = 'week3/W03-introduction-to-rest-api.md';
 
+const DG = {
+  spa: flow({
+    title: 'SPA คุยกับ RESTful API ด้วย AJAX + JSON', nodeW: 150, gapX: 64,
+    nodes: [
+      { id: 'cl', label: 'Client', sub: 'Browser / Mobile App\nHTML + CSS + JavaScript', col: 0, row: 0, tone: 'concept' },
+      { id: 'api', label: 'RESTful API', sub: 'Microservice', col: 1, row: 0, tone: 'experiment' },
+      { id: 'db', label: 'Database', col: 2, row: 0, tone: 'exercise' },
+    ],
+    edges: [
+      { from: 'cl', to: 'api', label: 'AJAX (verb + URI)' }, { from: 'api', to: 'cl', label: '{JSON}', dashed: true },
+      { from: 'api', to: 'db' },
+    ],
+  }),
+  layered: stack({
+    title: 'Layered System: router → service → repository', layerW: 320,
+    layers: [
+      { label: 'Client', sub: 'ไม่รู้ว่าคุยกับชั้นไหนข้างหลัง' },
+      { label: 'Router  (HTTP / Presentation)', sub: 'ตีความ URL + method แล้วตอบ JSON', tone: 'concept' },
+      { label: 'Service  (Business Logic)', sub: 'ตรรกะทางธุรกิจ · Entity', tone: 'experiment' },
+      { label: 'Repository  (Data Access)', sub: 'อ่านเขียนข้อมูล · Entity', tone: 'exercise' },
+    ],
+    between: [{ down: 'request', up: 'JSON' }, { down: 'เรียก', up: 'ผลลัพธ์' }, { down: 'เรียก', up: 'ข้อมูล' }],
+  }),
+};
+
 export const concepts = {
   spaRest: {
-    type: 'concept', id: 'c-spa-rest', title: 'ทบทวน SPA และ REST API คืออะไร',
+    type: 'concept', id: 'c-spa-rest', diagram: DG.spa, diagramCaption: 'SPA ↔ RESTful API', title: 'ทบทวน SPA และ REST API คืออะไร',
     source: `${SRC} §01 ทบทวน — Web Application กับ SPA, §02 REST API คืออะไร`,
     body: `<p>ภาพรวมเดิม: <b>Client → Http Request → Web Application (Node.js / Bun) → Database Server</b> แล้วส่ง <b>Http Response</b> กลับ — สัปดาห์นี้เพิ่มภาพของ <b>SPA (Single Page Application)</b></p>
       <table><tr><th>ฝั่ง</th><th>มีอะไร</th><th>คุยกันด้วย</th></tr>
@@ -70,7 +96,7 @@ export const concepts = {
   },
 
   layered: {
-    type: 'concept', id: 'c-layered', title: 'เจาะลึก Layered System',
+    type: 'concept', id: 'c-layered', diagram: DG.layered, diagramCaption: 'แต่ละชั้นคุยกับเพื่อนบ้านที่ติดกันเท่านั้น', title: 'เจาะลึก Layered System',
     source: `${SRC} §06 เจาะลึก Layered System`,
     body: `<p>ลำดับชั้นของชั้นกลาง โดย<b>แต่ละชั้นคุยกับเพื่อนบ้านที่ติดกันเท่านั้น</b></p>
       <table><tr><th>ชั้น</th><th>หน้าที่</th><th>สิ่งที่อยู่ในชั้น</th></tr>

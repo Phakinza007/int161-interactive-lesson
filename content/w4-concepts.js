@@ -1,10 +1,71 @@
+import { flow, sequence, stack } from '../js/diagrams.js';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const code = (s) => `<pre><code>${esc(s)}</code></pre>`;
 const SRC = 'week4/W04-database-connection.md';
 
+const DG = {
+  layers: flow({
+    title: 'สัปดาห์นี้เปลี่ยนแค่ชั้น Data Access', nodeW: 140, gapX: 46,
+    nodes: [
+      { id: 'r3', label: 'Router', sub: 'week 3', col: 0, row: 0 }, { id: 's3', label: 'Service', col: 1, row: 0 },
+      { id: 'd3', label: 'Repository', sub: 'array ใน memory', col: 2, row: 0 },
+      { id: 'r4', label: 'Router', sub: 'week 4: + async/await', col: 0, row: 1 }, { id: 's4', label: 'Service', sub: '+ async/await', col: 1, row: 1 },
+      { id: 'd4', label: 'Repository', sub: 'เปลี่ยนทั้งชั้น', col: 2, row: 1, tone: 'experiment' },
+      { id: 'db', label: 'MySQL', sub: 'persistent data', col: 3, row: 1, tone: 'exercise' },
+    ],
+    edges: [{ from: 'r3', to: 's3' }, { from: 's3', to: 'd3' }, { from: 'r4', to: 's4' }, { from: 's4', to: 'd4' }, { from: 'd4', to: 'db', label: 'SQL' }],
+  }),
+  connect: flow({
+    title: 'Connection vs Pool', nodeW: 150, gapX: 60,
+    nodes: [
+      { id: 'a1', label: 'Request ×N', col: 0, row: 0 },
+      { id: 'a2', label: 'createConnection', sub: '1 ครั้ง = 1 connection ใหม่\n(เปลือง ต้องปิดเอง)', col: 1, row: 0, tone: 'danger' },
+      { id: 'a3', label: 'MySQL', sub: 'connection พุ่งตามคนเข้า', col: 2, row: 0 },
+      { id: 'b1', label: 'Request ×N', col: 0, row: 1 },
+      { id: 'b2', label: 'createPool', sub: 'สร้างไว้ล่วงหน้า เช่น 8 ตัว\nเวียนใช้ · ไม่ปิด', col: 1, row: 1, tone: 'exercise' },
+      { id: 'b3', label: 'MySQL', sub: 'connection คงที่', col: 2, row: 1 },
+    ],
+    edges: [{ from: 'a1', to: 'a2' }, { from: 'a2', to: 'a3' }, { from: 'b1', to: 'b2' }, { from: 'b2', to: 'b3' }],
+  }) + flow({
+    title: 'รูปร่างผลลัพธ์ของ pool.query()', nodeW: 170, gapX: 56,
+    nodes: [
+      { id: 'q', label: 'await pool.query(sql, [values])', col: 0, row: 1 },
+      { id: 'sel', label: 'SELECT', sub: '[0] = rows (array ของ object)\n[1] = fields', col: 1, row: 0, tone: 'concept' },
+      { id: 'dml', label: 'INSERT / UPDATE / DELETE', sub: '[0] = ResultSetHeader\n(affectedRows, insertId)\n[1] = undefined', col: 1, row: 2, tone: 'experiment' },
+    ],
+    edges: [{ from: 'q', to: 'sel' }, { from: 'q', to: 'dml' }],
+  }),
+  asyncChain: stack({
+    title: 'async/await ลามทั้งเส้น', layerW: 330, gap: 50,
+    layers: [
+      { label: 'server.js', sub: 'async (req, res) => await route.handleUserRequest()' },
+      { label: 'router.js', sub: 'async + await service…', tone: 'concept' },
+      { label: 'service', sub: 'async + await repo…', tone: 'experiment' },
+      { label: 'repository', sub: 'async → คืน Promise (await pool.query)', tone: 'exercise' },
+    ],
+    between: [{ down: 'await', up: 'Promise' }, { down: 'await', up: 'Promise' }, { down: 'await', up: 'Promise' }],
+  }),
+  postFlow: flow({
+    title: 'POST /subjects: ตัดสินใจเป็น 201 / 409 / 400', nodeW: 128, gapX: 40,
+    nodes: [
+      { id: 'p', label: 'POST /subjects', col: 0, row: 0 },
+      { id: 'b', label: 'getBody()', sub: 'มี body ไหม?', col: 1, row: 0, tone: 'concept' },
+      { id: 's', label: 'Service', sub: 'รหัสวิชาซ้ำไหม?', col: 2, row: 0, tone: 'experiment' },
+      { id: 'r', label: 'Repository', sub: 'INSERT', col: 3, row: 0, tone: 'exercise' },
+      { id: 'e400', label: '400 Bad Request', sub: 'body ว่าง', col: 1, row: 1, tone: 'danger' },
+      { id: 'e409', label: '409 Conflict', sub: 'ซ้ำ → คืน null', col: 2, row: 1, tone: 'danger' },
+      { id: 'ok', label: '201 Created', col: 3, row: 1, tone: 'ok' },
+    ],
+    edges: [
+      { from: 'p', to: 'b' }, { from: 'b', to: 's', label: 'มี' }, { from: 's', to: 'r', label: 'ไม่ซ้ำ' },
+      { from: 'b', to: 'e400', tone: 'danger' }, { from: 's', to: 'e409', tone: 'danger' }, { from: 'r', to: 'ok', tone: 'ok' },
+    ],
+  }),
+};
+
 export const concepts = {
   goalsLayers: {
-    type: 'concept', id: 'c-goals-layers', title: 'เป้าหมาย, Layered System และการเตรียมฐานข้อมูล',
+    type: 'concept', id: 'c-goals-layers', diagram: DG.layers, diagramCaption: 'แถวบน = week 3, แถวล่าง = week 4 (เปลี่ยนแค่ Repository)', title: 'เป้าหมาย, Layered System และการเตรียมฐานข้อมูล',
     source: `${SRC} §01 เป้าหมายของบทนี้, §02 ทบทวน Layered System, §03 DB Client Tool, §04 สร้าง database และ table`,
     body: `<p><b>จบบทนี้ต้องทำได้:</b> 1) ใช้ Node.js เชื่อมต่อ MySQL 2) สร้าง CRUD API (ทำ C, R, D ครบ · U ให้ไปทำเอง) 3) ใช้ <b>Prepared Statement</b> ป้องกัน <b>SQL Injection</b> 4) เข้าใจการจัดการโค้ดแบบ layered system</p>
       <p class="muted"><i>(จาก transcript)</i> "ทำ CRUD ได้พื้นฐาน" = ยังไม่ต้อง validate ข้อมูล และอาจารย์เตือนว่าโค้ดบนสไลด์อาจไม่ตรงกับชื่อที่เราตั้งเอง — ให้เข้าใจแล้วปรับ ไม่ใช่ลอก</p>
@@ -22,7 +83,7 @@ export const concepts = {
   },
 
   connect: {
-    type: 'concept', id: 'c-connect', title: 'ต่อ database จาก Node.js: mysql2, Pool และรูปร่างของผลลัพธ์',
+    type: 'concept', id: 'c-connect', diagram: DG.connect, diagramCaption: 'Connection vs Pool และรูปร่างผลลัพธ์', title: 'ต่อ database จาก Node.js: mysql2, Pool และรูปร่างของผลลัพธ์',
     source: `${SRC} §05 ขั้นตอนการเชื่อม database, §06 รู้จักไลบรารี mysql2, §07 Connection กับ Pool, §08 Callback vs async/await`,
     body: `<p><b>3 ขั้นตอน:</b> 1) ติดตั้ง driver: <code>npm install mysql2</code> (MySQL ≥ 5.2 ใช้ <code>mysql2</code> ต่ำกว่านั้นใช้ <code>mysql</code>) 2) สร้าง Connection หรือ Pool 3) ส่ง SQL ด้วย <code>await pool.query("SQL Command")</code></p>
       ${code("import * as mysql from 'mysql2/promise'\nconst pool = mysql.createPool({\n    host: 'localhost',\n    user: 'root',\n    password: '<your-password>',\n    database: 'sampledb'\n})")}
@@ -39,7 +100,7 @@ export const concepts = {
   },
 
   layersCode: {
-    type: 'concept', id: 'c-layers-code', title: 'pool.js, Prepared Statement, repository และ async/await ทั้งเส้น',
+    type: 'concept', id: 'c-layers-code', diagram: DG.asyncChain, diagramCaption: 'เติมแค่ async/await ไม่ได้แก้ตรรกะ', title: 'pool.js, Prepared Statement, repository และ async/await ทั้งเส้น',
     source: `${SRC} §09 db/pool.js, §10 tests/test-db.js, §11 Prepared Statement, §12 subject-repository.js, §13 async/await ลามทั้งเส้น, §14 getBody()`,
     body: `<ul><li>แยก config ไว้ที่ <code>db/pool.js</code> ที่เดียวแล้ว <code>export</code> — repository หลายตัวจะไม่ต้องเขียนซ้ำ · ใน <code>tests/test-db.js</code> ต้องเรียก <code>await pool.end()</code> ไม่งั้นโปรแกรม<b>ไม่จบ</b> (connection ยังเปิดอยู่ ต้อง Ctrl+C)</li>
       <li><b>Prepared Statement:</b> ใช้ <code>?</code> แทนค่า ส่ง array ของค่าเป็นอาร์กิวเมนต์ที่สอง จับคู่ตามลำดับ — ป้องกัน <b>SQL Injection</b> และรองรับข้อมูลจาก front-end</li>
@@ -51,7 +112,7 @@ export const concepts = {
   },
 
   crudLogic: {
-    type: 'concept', id: 'c-crud-logic', title: 'POST/PUT, HTTP status, business logic ที่ service และวิธีคิดเรื่อง error',
+    type: 'concept', id: 'c-crud-logic', diagram: DG.postFlow, diagramCaption: 'เส้นทางตัดสินใจของ POST /subjects', title: 'POST/PUT, HTTP status, business logic ที่ service และวิธีคิดเรื่อง error',
     source: `${SRC} §15 POST /subjects, §16 PUT /subjects/{id}, §17 Business logic ในชั้น service, §18 วิธีคิดเรื่อง error, §สรุปท้ายบท`,
     body: `<table><tr><th>กรณี</th><th>Status</th></tr>
       <tr><td>สร้างสำเร็จ (POST)</td><td><b>201 Created</b> (ไม่ใช่ 200)</td></tr><tr><td>รหัสวิชาซ้ำ</td><td><b>409 Conflict</b></td></tr>

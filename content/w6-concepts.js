@@ -1,12 +1,63 @@
+import { flow, sequence, stack } from '../js/diagrams.js';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const code = (s) => `<pre><code>${esc(s)}</code></pre>`;
 const SRC = 'week6/06-INT161-Error Handling.pdf';
 const TPL = 'week6/express-template/src';
 const ASG = 'week6/express_crud_exception_assignment.md';
 
+const DG = {
+  crash: flow({
+    title: 'error ที่ไม่มีใครจับ = server ล่ม', nodeW: 150, gapX: 56,
+    nodes: [
+      { id: 'e', label: 'Error เกิดขึ้น', sub: 'throw / reject', col: 0, row: 0, tone: 'danger' },
+      { id: 'q', label: 'มีใครจับไหม?', sub: 'try…catch / error middleware', col: 1, row: 0, tone: 'concept' },
+      { id: 'ok', label: 'จัดการแล้วตอบ client', sub: 'server ทำงานต่อ', col: 2, row: 0, tone: 'ok' },
+      { id: 'bad', label: 'Node.js จบโปรเซส', sub: 'process.exit(1) → server ล่ม', col: 2, row: 1, tone: 'danger' },
+    ],
+    edges: [{ from: 'e', to: 'q' }, { from: 'q', to: 'ok', label: 'จับได้', tone: 'ok' }, { from: 'q', to: 'bad', label: 'ไม่มี', tone: 'danger' }],
+  }),
+  callStack: stack({
+    title: 'Error propagation ขึ้นตาม call stack', layerW: 320, gap: 50,
+    layers: [
+      { label: 'try { main() } catch (e)', sub: 'จับและจัดการที่นี่', tone: 'ok' },
+      { label: 'main()' },
+      { label: 'a()' },
+      { label: 'b()', sub: 'fs.readFileSync(…) โยน error', tone: 'danger' },
+    ],
+    between: [{ down: 'เรียก', up: 'error ส่งขึ้น', tone: 'danger' }, { down: 'เรียก', up: 'error ส่งขึ้น', tone: 'danger' }, { down: 'เรียก', up: 'error ส่งขึ้น', tone: 'danger' }],
+  }),
+  errorFlow: flow({
+    title: 'next(err) ข้ามไป error-handling middleware', nodeW: 132, gapX: 40,
+    nodes: [
+      { id: 'm1', label: 'Middleware 1', sub: 'logger', col: 0, row: 0, tone: 'concept' },
+      { id: 'm2', label: 'Middleware 2', sub: 'express.json()', col: 1, row: 0, tone: 'concept' },
+      { id: 'h', label: 'Route handler', sub: 'throw / next(err)', col: 2, row: 0, tone: 'experiment' },
+      { id: 'r', label: 'Response', sub: 'สำเร็จ', col: 3, row: 0, tone: 'ok' },
+      { id: 'em', label: 'Error middleware', sub: '(err, req, res, next)\nต้องอยู่ท้ายสุด', col: 2, row: 1, tone: 'danger' },
+      { id: 'er', label: 'Response', sub: '400 / 404 / 409 / 500', col: 3, row: 1, tone: 'danger' },
+    ],
+    edges: [
+      { from: 'm1', to: 'm2', label: 'next()' }, { from: 'm2', to: 'h', label: 'next()' }, { from: 'h', to: 'r', label: 'res.json()', tone: 'ok' },
+      { from: 'h', to: 'em', label: 'next(err)', tone: 'danger' }, { from: 'em', to: 'er', tone: 'danger' },
+    ],
+  }),
+  layersError: stack({
+    title: 'error ไหลย้อนขึ้นทีละชั้น', layerW: 320, gap: 40,
+    layers: [
+      { label: 'Client', sub: 'ได้ JSON error รูปแบบเดียว' },
+      { label: 'Error middleware', sub: 'ชั้นเดียวที่ตอบ error', tone: 'danger' },
+      { label: 'Controller (route)', sub: 'ส่งต่อด้วย next(err)', tone: 'concept' },
+      { label: 'Service', sub: 'business rules → โยน AppError', tone: 'experiment' },
+      { label: 'Repository', sub: 'โยน error / รับ error จาก MySQL', tone: 'exercise' },
+      { label: 'MySQL', sub: 'ER_DUP_ENTRY · ER_NO_REFERENCED_ROW_2 · ER_ROW_IS_REFERENCED_2' },
+    ],
+    between: [{ down: 'request', up: 'JSON error', tone: 'danger' }, { down: '', up: 'next(err)', tone: 'danger' }, { down: 'เรียก', up: 'throw', tone: 'danger' }, { down: 'เรียก', up: 'throw', tone: 'danger' }, { down: 'SQL', up: 'error code', tone: 'danger' }],
+  }),
+};
+
 export const concepts = {
   whatError: {
-    type: 'concept', id: 'c-what-error', title: 'Exception / Error คืออะไร และทำไมต้องจัดการ',
+    type: 'concept', id: 'c-what-error', diagram: DG.crash, diagramCaption: 'error ที่ไม่มีใครจับทำให้โปรเซสจบ', title: 'Exception / Error คืออะไร และทำไมต้องจัดการ',
     source: `${SRC} §Unit Objectives, §What is an Exception/Error?, §Why Error Handling Matters`,
     body: `<p><b>เมื่อจบบทนี้ควรทำได้:</b> เรียนรู้การจัดการ error ด้วย Express middleware · ออกแบบ global error handling ใน Node/Express ตาม best practice</p>
       <ul><li><b>Exception/Error</b> คือเหตุการณ์หรือเงื่อนไขที่ขัดขวางการทำงานปกติของโปรแกรม</li>
@@ -21,7 +72,7 @@ export const concepts = {
   },
 
   propagation: {
-    type: 'concept', id: 'c-propagation', title: 'Error propagation, try…catch และ custom error',
+    type: 'concept', id: 'c-propagation', diagram: DG.callStack, diagramCaption: 'error เดินทางขึ้น call stack จนกว่าจะเจอ catch', title: 'Error propagation, try…catch และ custom error',
     source: `${SRC} §Error propagation, §Error Handling (Sync): try .. catch, §The standard JavaScript Error object, §Customer Error, §Custom Error Classes`,
     body: `<p><b>Error propagation</b> คือกลไกส่ง error ขึ้นไปตาม call stack จนกว่าจะถูกจับและจัดการ — ถ้าฟังก์ชันที่เรียกไม่จัดการ มันจะส่งต่อขึ้นไปเรื่อย ๆ จนถึง global scope และอาจทำให้โปรแกรมจบ</p>
       ${code("try {\n   main(1);\n   main();            // ฟังก์ชัน b() เรียก fs.readFileSync('test.txt') ที่ไม่มีไฟล์\n} catch (e) {\n   console.log('Message: ', e.message);\n   console.log('Status: ', e.status);\n   console.log('Code: ', e.code);\n   console.log('Stack Trace: ', e.stack);\n}")}
@@ -37,7 +88,7 @@ export const concepts = {
   },
 
   errorFlow: {
-    type: 'concept', id: 'c-error-flow', title: 'Middleware และกลไก error handling ใน Express',
+    type: 'concept', id: 'c-error-flow', diagram: DG.errorFlow, diagramCaption: 'next(err) ข้ามทุกอย่างไป error-handling middleware', title: 'Middleware และกลไก error handling ใน Express',
     source: `${SRC} §Express Middleware, §Error Handling Mechanism in Express.js`,
     body: `<p><b>Middleware</b> คือฟังก์ชันที่รับ <code>(req, res, next)</code> ทำงานบางอย่างได้ เช่น log, parse body, auth, validate · เรียก <code>next()</code> → ส่งต่อไป middleware ถัดไป · <code>res.send()</code>/<code>res.end()</code> → จบ (ตอบ client)</p>
       <p style="font-family:ui-monospace,monospace;font-size:13px">Client (Request) → Express server → [Middleware 1] → next() → [Middleware 2] → next() → [Router Match] → handler → [Response] → Client</p>
@@ -71,7 +122,7 @@ export const concepts = {
   },
 
   layersAssignment: {
-    type: 'concept', id: 'c-layers-assignment', title: 'error ในทุกชั้น, MySQL error code และกติกาของงานส่ง',
+    type: 'concept', id: 'c-layers-assignment', diagram: DG.layersError, diagramCaption: 'ชั้นเดียวที่ตอบ client คือ error middleware', title: 'error ในทุกชั้น, MySQL error code และกติกาของงานส่ง',
     source: `${SRC} §Layered System; ${TPL}/repositories/example-repo.js; ${ASG} §1, §1.3, §3`,
     body: `<p>ตาม Layered System error ไหลย้อนขึ้นมาทีละชั้น: <b>Repository → Service → Controller → (error middleware) → Client</b> แต่ละชั้นโยน error ขึ้นไป ไม่ตอบ client เอง — ชั้นที่ตอบมีที่เดียวคือ error-handling middleware</p>
       ${code("// template: repository โยน error ที่มี status/code\nexport async function findOne(id) {\n    const [data] = await db.query(FIND_ONE_SQL, [id])\n    if (data.length === 0) {\n        const err = new Error(`${ENTITY_NAME} not found for id = ${id}`)\n        err.statusCode = 404\n        err.code = \"NOT FOUND\"\n        throw err\n    }\n    return data[0]\n}")}

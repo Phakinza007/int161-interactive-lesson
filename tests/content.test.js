@@ -25,6 +25,20 @@ for (const id of Object.keys(EXPECTED)) {
     }
   });
 
+  test(`${id}: every diagram is well-formed SVG (balanced tags, no NaN, captioned)`, () => {
+    for (const b of mod.blocks.filter((x) => x.diagram)) {
+      const svgs = b.diagram.match(/<svg[\s>]/g) || [];
+      assert.ok(svgs.length >= 1, `${b.id}: no <svg>`);
+      assert.equal(svgs.length, (b.diagram.match(/<\/svg>/g) || []).length, `${b.id}: unbalanced svg`);
+      for (const t of ['g', 'text', 'defs', 'marker']) {
+        assert.equal((b.diagram.match(new RegExp(`<${t}[\\s>]`, 'g')) || []).length, (b.diagram.match(new RegExp(`</${t}>`, 'g')) || []).length, `${b.id}: unbalanced <${t}>`);
+      }
+      assert.ok(!/NaN/.test(b.diagram), `${b.id}: NaN in coordinates`);
+      assert.ok(b.diagramCaption, `${b.id}: a diagram needs a caption`);
+      assert.equal(b.type, 'concept', `${b.id}: diagrams belong to concept blocks`);
+    }
+  });
+
   for (const b of mod.blocks.filter((x) => x.type === 'experiment' && x.files)) {
     test(`${id}/${b.id}: experiment code runs without crashing`, async () => {
       const r = await runProject({ files: b.files, entry: b.entry || firstFile(b), fixtures: b.fixtures });

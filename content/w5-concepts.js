@@ -1,10 +1,48 @@
+import { flow, sequence, stack } from '../js/diagrams.js';
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const code = (s) => `<pre><code>${esc(s)}</code></pre>`;
 const SRC = 'week5/05-INT161-Express-Framework.pdf';
 
+const DG = {
+  what: stack({
+    title: 'Express อยู่บน HTTP server ของ Node.js', layerW: 320,
+    layers: [
+      { label: 'แอปของเรา', sub: 'routes · handlers · services', tone: 'concept' },
+      { label: 'Express', sub: 'Routing + Middleware (unopinionated)', tone: 'experiment' },
+      { label: 'Node.js  http module', sub: 'createServer · req · res' },
+    ],
+    between: [{ down: 'app.get / app.use', up: 'res.json()' }, { down: 'req / res', up: 'response' }],
+  }),
+  layers: stack({
+    title: 'Layered System ใน Express', layerW: 340, gap: 48,
+    layers: [
+      { label: 'Front-End', sub: 'ส่ง/รับ {JSON}' },
+      { label: 'Express Router  (Controller)', sub: 'รับ HTTP · ส่งต่อ · ตอบ — เคาน์เตอร์ต้อนรับ', tone: 'concept' },
+      { label: 'Service Layer', sub: 'Business logic — หมอที่ตรวจและตัดสินใจ', tone: 'experiment' },
+      { label: 'Repository  (Data Access)', sub: 'CRUD — ห้องเวชระเบียน', tone: 'exercise' },
+      { label: 'Database' },
+    ],
+    between: [{ down: 'request', up: 'JSON' }, { down: 'เรียก', up: 'ผลลัพธ์' }, { down: 'เรียก', up: 'ข้อมูล' }, { down: 'SQL', up: 'rows' }],
+  }),
+  middleware: flow({
+    title: 'Middleware ทำงานก่อนถึง router', nodeW: 128, gapX: 40,
+    nodes: [
+      { id: 'rq', label: 'Request', col: 0, row: 0 },
+      { id: 'm1', label: 'Middleware', sub: 'เช่น logger', col: 1, row: 0, tone: 'concept' },
+      { id: 'm2', label: 'express.json()', sub: 'built-in', col: 2, row: 0, tone: 'concept' },
+      { id: 'rt', label: 'Router', sub: 'app.use(path, router)', col: 3, row: 0, tone: 'experiment' },
+      { id: 'rs', label: 'Response', sub: 'res.json()', col: 3, row: 1, tone: 'exercise' },
+    ],
+    edges: [
+      { from: 'rq', to: 'm1' }, { from: 'm1', to: 'm2', label: 'next()' }, { from: 'm2', to: 'rt', label: 'next()' },
+      { from: 'rt', to: 'rs' },
+    ],
+  }),
+};
+
 export const concepts = {
   expressWhat: {
-    type: 'concept', id: 'c-express-what', title: 'Express.js คืออะไร และต่างจาก http เพียว ๆ อย่างไร',
+    type: 'concept', id: 'c-express-what', diagram: DG.what, diagramCaption: 'Express เป็นชั้น routing + middleware บน http module', title: 'Express.js คืออะไร และต่างจาก http เพียว ๆ อย่างไร',
     source: `${SRC} §Unit Objectives, §What is Express JS?, §Key Concepts, §Raw Node.js HTTP vs. Express.js`,
     body: `<p><b>เมื่อจบบทนี้ควรทำได้:</b> สร้างโปรเจกต์ Node.js ด้วย Express · อธิบายแนวคิดพื้นฐานของ Express · อธิบาย layer system ของ RESTful API · สร้าง CRUD REST API ตาม layer system ได้</p>
       <p>ภาพรวม: Web Application → HTTP Request → <b>Node.js / Bun</b> → Database Server แล้วส่ง HTTP Response กลับ</p>
@@ -47,7 +85,7 @@ export const concepts = {
   },
 
   layersExpress: {
-    type: 'concept', id: 'c-layers-express', title: 'Layered System กับ Express: Controller / Service / Repository',
+    type: 'concept', id: 'c-layers-express', diagram: DG.layers, diagramCaption: 'Controller / Service / Repository (อุปมาโรงพยาบาล)', title: 'Layered System กับ Express: Controller / Service / Repository',
     source: `${SRC} §Layered System, §Layer System Functions (1/2), (2/2)`,
     body: `<p>Front-End ⇄ <b>{JSON}</b> ⇄ Express App → <b>Express Router</b> (Presentation/Controller) → <b>Service Layer</b> (Business Logic) → <b>Data Access Layer</b> (Repository)</p>
       ${code("import express from \"express\";\n\nconst PORT = 3000;\n\nconst app = express();\n\napp.use(express.json());\n\napp.use('/customers', customerRoute)\napp.use('/orders', orderRouter);\napp.use('/products', productRouter);\napp.use('/account', accountRouter);\n\napp.listen(PORT, () => {\n    console.log(\n        `Running at http://localhost:${PORT}`)\n});")}
@@ -70,7 +108,7 @@ export const concepts = {
   },
 
   middleware: {
-    type: 'concept', id: 'c-middleware', title: 'Middleware ใน Express',
+    type: 'concept', id: 'c-middleware', diagram: DG.middleware, diagramCaption: 'middleware ทำงานตามลำดับก่อนถึง router', title: 'Middleware ใน Express',
     source: `${SRC} §Middleware in Express`,
     body: `<ul><li>Middleware เป็นขั้นตอนตัวกลางที่ประมวลผล request <b>ก่อน</b>ถึง router — เช่น ตรวจ authentication ก่อนให้เข้า admin API</li>
       <li>ใช้ <code>next()</code> เพื่อส่งต่อการควบคุมไปยัง middleware ตัวถัดไป</li>
