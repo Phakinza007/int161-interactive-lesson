@@ -13,7 +13,7 @@ for (const id of Object.keys(EXPECTED)) {
   const mod = (await import(file.href)).default;
   const problems = problemsFor(id, mod.blocks);
   const pct = ratioPct(countBlocks(mod.blocks));
-  console.log(`${id}: ${pct.concept}:${pct.experiment}:${pct.exercise}${problems.length ? '  FAIL' : '  ok'}`);
+  console.log(`${id}: ${Math.round(pct.concept)}:${Math.round(pct.experiment)}:${Math.round(pct.exercise)}${problems.length ? '  FAIL' : '  ok'}`);
   for (const p of problems) console.log('  - ' + p);
   if (problems.length) failed = true;
 }

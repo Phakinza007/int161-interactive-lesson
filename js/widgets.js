@@ -1,4 +1,5 @@
 import { h } from './dom.js';
+import { createSqlServer, splitStatements } from '../engine/sql-engine.js';
 
 export const WIDGETS = {
   'eval-bars'(host, block) {
@@ -186,6 +187,48 @@ export const WIDGETS = {
     });
     paintScore();
     host.append(...list, score);
+  },
+
+  'sql-console'(host, block) {
+    const initial = block.data.script;
+    let server = createSqlServer();
+    let session = server.connect({});
+    const ta = h('textarea', { class: 'code-input', rows: 14, spellcheck: 'false', 'aria-label': 'SQL console' });
+    ta.value = initial;
+    const out = h('div', { class: 'sqlout' });
+    const oneLine = (s) => s.replace(/\s+/g, ' ').slice(0, 100);
+    const rowsTable = (r) => {
+      const cols = r.fields.map((f) => f.name);
+      const shown = r.rows.slice(0, 30);
+      return h('div', { class: 'sqltablewrap' }, h('table', { class: 'sqltable' },
+        h('tr', {}, ...cols.map((c) => h('th', {}, c))),
+        ...shown.map((row) => h('tr', {}, ...cols.map((c) => h('td', {}, row[c] === null ? 'NULL' : String(row[c]))))),
+      ), r.rows.length > shown.length ? h('div', { class: 'muted' }, `แสดง ${shown.length} จาก ${r.rows.length} แถว`) : h('div', { class: 'muted' }, `${r.rows.length} แถว`));
+    };
+    const execute = () => {
+      const items = [];
+      for (const st of splitStatements(ta.value)) {
+        const head = h('div', { class: 'sqlstmt' }, oneLine(st));
+        try {
+          const r = session.query(st);
+          if (r.type === 'rows') items.push(h('div', {}, head, rowsTable(r)));
+          else {
+            const n = r.header.affectedRows;
+            items.push(h('div', {}, head, h('div', { class: 'sqlok' }, n ? `${n} row${n > 1 ? 's' : ''} affected${r.header.info ? ' — ' + r.header.info : ''}` : 'OK')));
+          }
+        } catch (e) {
+          items.push(h('div', {}, head, h('div', { class: 'sqlerr' }, `ERROR ${e.errno || ''} (${e.code}): ${e.message}`)));
+          break; // like a SQL client: stop at the first failing statement
+        }
+      }
+      out.replaceChildren(...items);
+    };
+    host.append(
+      ta,
+      h('div', { class: 'actions' },
+        h('button', { class: 'btn primary', onclick: execute }, '▶ Execute'),
+        h('button', { class: 'btn', onclick: () => { server = createSqlServer(); session = server.connect({}); ta.value = initial; out.replaceChildren(); } }, 'Reset ฐานข้อมูล')),
+      out);
   },
 
   'translator-sim'(host) {

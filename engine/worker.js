@@ -5,7 +5,7 @@ let session = null;
 
 const reply = (id, result) => self.postMessage({ id, ok: true, result });
 const fail = (id, e) => self.postMessage({ id, ok: false, error: { name: e.name, message: e.message } });
-const snapshot = (r) => ({ ok: r.ok, logs: r.logs.slice(), error: r.error });
+const snapshot = (r) => ({ ok: r.ok, logs: r.logs.slice(), error: r.error, listening: r.session.network.isListening() });
 
 self.onmessage = async ({ data }) => {
   const { id, type } = data;

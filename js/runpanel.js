@@ -45,7 +45,7 @@ export function createRunPanel({ block, moduleId, store, onDone }) {
       const r = await sandbox.run(payload());
       showLogs(r.logs, r.error);
       if (r.ok) {
-        buildRequestBox();
+        if (r.listening) buildRequestBox(); // only programs that started a server can be sent requests
         if (block.type === 'experiment') onDone();
       }
     } catch (e) { fail(e); }
