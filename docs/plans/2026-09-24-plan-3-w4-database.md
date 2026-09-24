@@ -67,4 +67,12 @@ Exercises (11): `x-pool-config` (`sample` → `sampledb`), `x-find-all`, `x-find
 
 ## Execution notes
 
-(filled in while running)
+Found while running; later plans inherit these.
+
+1. **Runner hooks:** `buildModules(ctx)` gets `{ network, fixtures, console, track, onIdle }`; `runProject` waits for `track`ed promises before returning and then runs `onIdle` hooks. `network.isListening()` exists. The MySQL modules are registered automatically in `runProject` (lazy server, seeded from `fixtures.mysql.seed`, fresh on every Run).
+2. **`pool.query(cb); pool.end();` must still deliver the callback:** closed-ness is decided when a query is *issued*. Callback-API results fire on a timer (macrotask), promise-API results on microtasks, so ordering against `await` looks like real I/O.
+3. **Hang hint:** an un-ended pool (no HTTP server listening) logs one `info` line explaining a real process would not exit. Connections obtained via `pool.getConnection()` belong to the pool and are not counted on their own.
+4. **UI:** the request box appears only when the program started a server (`listening` is part of the worker snapshot), so DB scripts (`test-db.js`) no longer show a pointless request panel.
+5. **`sql-console` widget** runs `createSqlServer` in the page (persistent until "Reset ฐานข้อมูล"), stops at the first failing statement like a SQL client.
+6. **Browser caching gotcha (dev only):** module workers cache their imports; after engine changes force-refresh with `fetch(url, {cache:'reload'})` for every module, then reload. GitHub Pages serves with `max-age=600`, so a fresh deploy can take ~10 minutes to reach a browser that already loaded the site.
+7. **Verified live:** SQL console (17 rows affected, duplicate error), 4 code experiments (insertId 18, hang hint, callback-vs-promise, full CRUD 201→409→200→204→404), 11/11 exercises fail→pass, no console errors.
