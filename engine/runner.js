@@ -25,11 +25,23 @@ export async function runProject({ files, entry, fixtures = {}, buildModules }) 
     responseTimeoutMs: fixtures.responseTimeoutMs ?? 300,
   });
   const node = createNodeModules({ network, files: fixtures.fs || {} });
-  const builtins = { ...node, ...(buildModules ? buildModules({ network, fixtures, console }) : {}) };
+  const pending = new Set();
+  const idleHooks = [];
+  // simulated async work (e.g. callback-style DB queries) registers here so the first output snapshot includes it
+  const track = (p) => {
+    pending.add(p);
+    p.then(() => pending.delete(p), () => pending.delete(p));
+    return p;
+  };
+  const onIdle = (fn) => { idleHooks.push(fn); };
+  const ctx = { network, fixtures, console, track, onIdle };
+  const builtins = { ...node, ...(buildModules ? buildModules(ctx) : {}) };
   const session = { request: (req) => network.request(req), network, logs };
   const loader = createLoader({ files, builtins, globals: { console, process: node.process } });
   try {
     await loader.runEntry(entry);
+    while (pending.size) await Promise.allSettled([...pending]);
+    for (const fn of idleHooks) fn();
     return { ok: true, logs, error: null, session };
   } catch (e) {
     if (e && e.name === 'ProcessExit') {

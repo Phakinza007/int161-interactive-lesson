@@ -43,6 +43,7 @@ export function createNetwork({ onError = () => {}, responseTimeoutMs = 1500 } =
   return {
     listen(port, handler) { servers.set(port, handler); },
     close(port) { servers.delete(port); },
+    isListening() { return servers.size > 0; },
     request({ method = 'GET', path = '/', headers = {}, body, port } = {}) {
       const handler = port !== undefined ? servers.get(port) : [...servers.values()].pop();
       if (!handler) {

@@ -95,3 +95,12 @@ test('after the first response timeout, later timeouts are much shorter (many un
   assert.ok(first >= 190, `first took ${first}ms`);
   assert.ok(rest < 400, `5 follow-ups took ${rest}ms`);
 });
+
+test('isListening() is true only while a server listens', () => {
+  const net = createNetwork();
+  assert.equal(net.isListening(), false);
+  net.listen(3000, () => {});
+  assert.equal(net.isListening(), true);
+  net.close(3000);
+  assert.equal(net.isListening(), false);
+});

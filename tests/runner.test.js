@@ -94,3 +94,34 @@ test('server.listen callback output is captured by the initial run (slides log i
   const r = await runProject({ files: { 'a.js': src }, entry: 'a.js' });
   assert.deepEqual(r.logs.map((l) => l.text), ['Server running']);
 });
+
+test('track(): runProject waits for tracked work; a tracked rejection does not crash the run', async () => {
+  const seen = [];
+  const r = await runProject({
+    files: { 'a.js': "const m = require('slow'); m.start(); m.fail(); console.log('sync done');" },
+    entry: 'a.js',
+    buildModules: ({ track, console }) => ({
+      slow: {
+        start: () => track(new Promise((res) => setTimeout(() => { seen.push('late'); console.log('late work'); res(); }, 20))),
+        fail: () => track(Promise.reject(new Error('ignored'))),
+      },
+    }),
+  });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.logs.map((l) => l.text), ['sync done', 'late work']);
+  assert.deepEqual(seen, ['late']);
+});
+
+test('onIdle(): runs once after the entry and tracked work finished, and can see network.isListening()', async () => {
+  const calls = [];
+  const r = await runProject({
+    files: { 'a.js': "const m = require('probe'); m.work();" },
+    entry: 'a.js',
+    buildModules: ({ track, onIdle, network, console }) => {
+      onIdle(() => { calls.push(network.isListening()); console.info('idle'); });
+      return { probe: { work: () => track(new Promise((res) => setTimeout(res, 10))) } };
+    },
+  });
+  assert.deepEqual(calls, [false]);
+  assert.deepEqual(r.logs.map((l) => l.text), ['idle']);
+});
