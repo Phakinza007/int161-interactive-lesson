@@ -204,3 +204,70 @@ test('splitStatements respects quotes and comments', () => {
   assert.deepEqual(splitStatements("insert into t values ('a;b'); select 1; -- x;y\nselect 2"),
     ["insert into t values ('a;b')", 'select 1', '-- x;y\nselect 2']);
 });
+
+// ---------- foreign keys (Plan 5) ----------
+
+const FK_SEED = `create database d; use d;
+create table offices (officeCode varchar(10) primary key, city varchar(50));
+create table employees (employeeNumber int primary key, email varchar(60), officeCode varchar(10), reportsTo int,
+  foreign key (officeCode) references offices (officeCode),
+  foreign key (reportsTo) references employees (employeeNumber));
+create table customers (customerNumber int primary key, name varchar(50));
+create table orders (orderNumber int primary key auto_increment, customerNumber int not null,
+  constraint fk_order_customer foreign key (customerNumber) references customers (customerNumber));
+insert into offices values ('1', 'SF'), ('2', 'Boston');
+insert into employees values (1002, 'a@x.com', '1', NULL), (1056, 'b@x.com', '1', 1002);
+insert into customers values (103, 'Atelier'), (112, 'Signal');
+insert into orders (customerNumber) values (103);`;
+const fk = () => createSqlServer({ seed: FK_SEED }).connect({ database: 'd' });
+
+test('FK child side: INSERT/UPDATE with a missing parent → 1452 with the MySQL message and constraint name', () => {
+  const s = fk();
+  rejectsWith(() => s.query("INSERT INTO employees VALUES (2000, 'c@x.com', '99', NULL)"), 'ER_NO_REFERENCED_ROW_2', 1452,
+    "Cannot add or update a child row: a foreign key constraint fails (`d`.`employees`, CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`officeCode`) REFERENCES `offices` (`officeCode`))");
+  rejectsWith(() => s.query("INSERT INTO employees VALUES (2000, 'c@x.com', '1', 5555)"), 'ER_NO_REFERENCED_ROW_2', 1452, /employees_ibfk_2.*REFERENCES `employees` \(`employeeNumber`\)/);
+  rejectsWith(() => s.query("UPDATE employees SET officeCode = '99' WHERE employeeNumber = 1056"), 'ER_NO_REFERENCED_ROW_2', 1452);
+  assert.equal(s.query("INSERT INTO employees VALUES (2000, 'c@x.com', '2', 1002)").header.affectedRows, 1); // valid parents
+  assert.equal(s.query("INSERT INTO employees VALUES (2001, 'd@x.com', '2', NULL)").header.affectedRows, 1); // NULL is allowed
+  rejectsWith(() => s.query("INSERT INTO orders (customerNumber) VALUES (999)"), 'ER_NO_REFERENCED_ROW_2', 1452, /CONSTRAINT `fk_order_customer` FOREIGN KEY/);
+});
+
+test('FK parent side: DELETE/UPDATE of a referenced row → 1451 (RESTRICT); unreferenced rows can go', () => {
+  const s = fk();
+  rejectsWith(() => s.query('DELETE FROM customers WHERE customerNumber = 103'), 'ER_ROW_IS_REFERENCED_2', 1451,
+    "Cannot delete or update a parent row: a foreign key constraint fails (`d`.`orders`, CONSTRAINT `fk_order_customer` FOREIGN KEY (`customerNumber`) REFERENCES `customers` (`customerNumber`))");
+  rejectsWith(() => s.query('UPDATE customers SET customerNumber = 500 WHERE customerNumber = 103'), 'ER_ROW_IS_REFERENCED_2', 1451);
+  assert.equal(s.query('DELETE FROM customers WHERE customerNumber = 112').header.affectedRows, 1);
+  assert.equal(s.query("DELETE FROM offices WHERE officeCode = '2'").header.affectedRows, 1);
+  rejectsWith(() => s.query("DELETE FROM offices WHERE officeCode = '1'"), 'ER_ROW_IS_REFERENCED_2', 1451);
+  assert.equal(s.query('SELECT COUNT(*) AS n FROM customers').rows[0].n, 1);
+});
+
+test('FK self-reference: deleting a manager that others report to → 1451 on employees_ibfk_2', () => {
+  const s = fk();
+  rejectsWith(() => s.query('DELETE FROM employees WHERE employeeNumber = 1002'), 'ER_ROW_IS_REFERENCED_2', 1451, /`d`\.`employees`, CONSTRAINT `employees_ibfk_2`/);
+  assert.equal(s.query('DELETE FROM employees WHERE employeeNumber = 1056').header.affectedRows, 1);
+  assert.equal(s.query('DELETE FROM employees WHERE employeeNumber = 1002').header.affectedRows, 1);
+});
+
+test('column-level REFERENCES is parsed but not enforced (as in MySQL); ON DELETE actions are unsupported', () => {
+  const s = fk();
+  s.query("CREATE TABLE loose (id int primary key, o varchar(10) REFERENCES offices (officeCode))");
+  assert.equal(s.query("INSERT INTO loose VALUES (1, 'nope')").header.affectedRows, 1);
+  rejectsWith(() => s.query('CREATE TABLE c (a varchar(10), FOREIGN KEY (a) REFERENCES offices (officeCode) ON DELETE CASCADE)'), 'SIM_UNSUPPORTED_SQL');
+});
+
+test('FK definition errors and DROP of a referenced table', () => {
+  const s = fk();
+  rejectsWith(() => s.query('CREATE TABLE bad (a int, FOREIGN KEY (a) REFERENCES nope (id))'), 'ER_FK_CANNOT_OPEN_PARENT', 1824, "Failed to open the referenced table 'nope'");
+  rejectsWith(() => s.query('DROP TABLE customers'), 'ER_FK_CANNOT_DROP_PARENT', 3730,
+    "Cannot drop table 'customers' referenced by a foreign key constraint 'fk_order_customer' on table 'orders'.");
+  s.query('DROP TABLE orders');
+  s.query('DROP TABLE customers');
+});
+
+test('FK: updating a NON-key column of a referenced parent row is allowed (only key changes are restricted)', () => {
+  const s = fk();
+  assert.equal(s.query("UPDATE customers SET name = 'Renamed' WHERE customerNumber = 103").header.affectedRows, 1);
+  assert.equal(s.query("UPDATE employees SET email = 'new@x.com' WHERE employeeNumber = 1002").header.changedRows, 1); // referenced by 1056.reportsTo
+});

@@ -145,7 +145,7 @@ function syntax(sql, pos) {
 
 // ---------- parser ----------
 
-const UNSUPPORTED_WORDS = new Set(['JOIN', 'INNER', 'LEFT', 'RIGHT', 'OUTER', 'CROSS', 'GROUP', 'HAVING', 'UNION', 'DISTINCT', 'FOREIGN', 'CONSTRAINT', 'REFERENCES']);
+const UNSUPPORTED_WORDS = new Set(['JOIN', 'INNER', 'LEFT', 'RIGHT', 'OUTER', 'CROSS', 'GROUP', 'HAVING', 'UNION', 'DISTINCT']);
 
 class Parser {
   constructor(sql, values) {
@@ -362,6 +362,39 @@ function makeExecutor(server, session, sql, values) {
     }
   }
 
+  // ----- foreign keys (RESTRICT semantics) -----
+  const q = (n) => '`' + n + '`';
+  const fkDetail = (child, fk) => `(${q(child.db.name)}.${q(child.name)}, CONSTRAINT ${q(fk.name)} FOREIGN KEY (${fk.colNames.map(q).join(', ')}) REFERENCES ${q(fk.refName)} (${fk.refColNames.map(q).join(', ')}))`;
+  const parentTable = (table, fk) => (fk.refKey === table.name.toLowerCase() ? table : table.db.tables.get(fk.refKey));
+
+  function checkChildFks(table, row) {
+    for (const fk of table.fks) {
+      const vals = fk.colNames.map((c) => row[c]);
+      if (vals.some((v) => v === null || v === undefined)) continue;
+      const parent = parentTable(table, fk);
+      const found = parent.rows.some((r) => fk.refColNames.every((c, k) => compare(r[c], vals[k]) === 0));
+      if (!found) throw err('ER_NO_REFERENCED_ROW_2', 1452, `Cannot add or update a child row: a foreign key constraint fails ${fkDetail(table, fk)}`, '23000');
+    }
+  }
+
+  // oldRows: rows that are going away (DELETE) or were updated (UPDATE, with newByOld = Map(old -> updated row)).
+  // For an UPDATE only a change of the referenced key columns is restricted.
+  function checkParentRefs(table, oldRows, newByOld = null) {
+    for (const child of table.db.tables.values()) {
+      for (const fk of child.fks) {
+        if (fk.refKey !== table.name.toLowerCase()) continue;
+        for (const old of oldRows) {
+          const updated = newByOld && newByOld.get(old);
+          if (updated && fk.refColNames.every((c) => compare(updated[c], old[c]) === 0)) continue;
+          const pvals = fk.refColNames.map((c) => old[c]);
+          if (pvals.some((v) => v === null || v === undefined)) continue;
+          const clash = child.rows.find((r) => !oldRows.includes(r) && fk.colNames.every((c, k) => compare(r[c], pvals[k]) === 0));
+          if (clash) throw err('ER_ROW_IS_REFERENCED_2', 1451, `Cannot delete or update a parent row: a foreign key constraint fails ${fkDetail(child, fk)}`, '23000');
+        }
+      }
+    }
+  }
+
   // ----- statements -----
   function createDatabase() {
     const ifNot = p.eatWord('IF') && (p.expectWord('NOT'), p.expectWord('EXISTS'), true);
@@ -388,9 +421,34 @@ function makeExecutor(server, session, sql, values) {
     p.expectOp('(');
     const columns = [];
     const keys = [];
+    const rawFks = [];
     let primary = null;
+    const skipReferences = () => {
+      p.qname();
+      p.expectOp('(');
+      p.name();
+      while (p.eatOp(',')) p.name();
+      p.expectOp(')');
+      if (p.isWord('ON') || p.isWord('MATCH')) throw unsupported(sql);
+    };
     for (;;) {
-      if (p.isWord('PRIMARY')) {
+      let cname = null;
+      if (p.isWord('CONSTRAINT')) { p.i++; cname = p.name(); }
+      if (p.isWord('FOREIGN')) {
+        p.i++; p.expectWord('KEY');
+        p.expectOp('(');
+        const cols = [p.name()];
+        while (p.eatOp(',')) cols.push(p.name());
+        p.expectOp(')');
+        p.expectWord('REFERENCES');
+        const ref = p.qname();
+        p.expectOp('(');
+        const refCols = [p.name()];
+        while (p.eatOp(',')) refCols.push(p.name());
+        p.expectOp(')');
+        if (p.isWord('ON') || p.isWord('MATCH')) throw unsupported(sql);
+        rawFks.push({ cname, cols, ref, refCols });
+      } else if (p.isWord('PRIMARY')) {
         p.i++; p.expectWord('KEY'); p.expectOp('(');
         const cols = [p.name().toLowerCase()];
         while (p.eatOp(',')) cols.push(p.name().toLowerCase());
@@ -404,7 +462,7 @@ function makeExecutor(server, session, sql, values) {
         const cols = [p.name().toLowerCase()];
         while (p.eatOp(',')) cols.push(p.name().toLowerCase());
         p.expectOp(')');
-        keys.push({ name: kname || cols[0], cols });
+        keys.push({ name: kname || cname || cols[0], cols });
       } else if (p.isWord('KEY') || p.isWord('INDEX')) {
         p.i++;
         if (!p.isOp('(')) p.name();
@@ -439,6 +497,7 @@ function makeExecutor(server, session, sql, values) {
           else if (p.eatWord('UNSIGNED') || p.eatWord('ZEROFILL')) { /* ignored */ }
           else if (p.eatWord('DEFAULT')) { const o = p.operand(); col.hasDefault = true; col.def = o.kind === 'lit' ? o.v : null; }
           else if (p.eatWord('COMMENT')) p.next();
+          else if (p.eatWord('REFERENCES')) skipReferences(); // MySQL parses column-level REFERENCES but ignores it
           else break;
         }
         columns.push(col);
@@ -455,7 +514,15 @@ function makeExecutor(server, session, sql, values) {
       if (ifNot) return header(0);
       throw err('ER_TABLE_EXISTS_ERROR', 1050, `Table '${q.name}' already exists`, '42S01');
     }
-    db.tables.set(q.name.toLowerCase(), { name: q.name, columns, keys, rows: [], nextId: 1 });
+    const fks = rawFks.map((f, i) => {
+      const refKey = f.ref.name.toLowerCase();
+      const refTable = refKey === q.name.toLowerCase() ? { columns } : db.tables.get(refKey);
+      if (!refTable) throw err('ER_FK_CANNOT_OPEN_PARENT', 1824, `Failed to open the referenced table '${f.ref.name}'`, 'HY000');
+      const colNames = f.cols.map((c) => colOf({ columns }, c, 'foreign key').name);
+      const refColNames = f.refCols.map((c) => colOf(refTable, c, 'foreign key').name);
+      return { name: f.cname || `${q.name}_ibfk_${i + 1}`, colNames, refKey, refName: refKey === q.name.toLowerCase() ? q.name : refTable.name, refColNames };
+    });
+    db.tables.set(q.name.toLowerCase(), { name: q.name, db, columns, keys, fks, rows: [], nextId: 1 });
     return header(0);
   }
 
@@ -467,6 +534,11 @@ function makeExecutor(server, session, sql, values) {
     if (!db.tables.has(q.name.toLowerCase())) {
       if (ifExists) return header(0);
       throw err('ER_BAD_TABLE_ERROR', 1051, `Unknown table '${db.name}.${q.name}'`, '42S02');
+    }
+    for (const child of db.tables.values()) {
+      if (child.name.toLowerCase() === q.name.toLowerCase()) continue;
+      const fk = child.fks.find((f) => f.refKey === q.name.toLowerCase());
+      if (fk) throw err('ER_FK_CANNOT_DROP_PARENT', 3730, `Cannot drop table '${db.tables.get(q.name.toLowerCase()).name}' referenced by a foreign key constraint '${fk.name}' on table '${child.name}'.`, 'HY000');
     }
     db.tables.delete(q.name.toLowerCase());
     return header(0);
@@ -551,6 +623,7 @@ function makeExecutor(server, session, sql, values) {
           if (col.autoInc && !firstId) firstId = row[col.name];
         }
         checkKeys(table, row, null);
+        checkChildFks(table, row);
         table.rows.push(row);
       });
     } catch (e) {
@@ -651,6 +724,7 @@ function makeExecutor(server, session, sql, values) {
     const snapshot = table.rows.map((r) => ({ ...r }));
     const originals = new Map(table.rows.map((r, i) => [r, snapshot[i]]));
     let changed = 0;
+    const replaced = [];
     try {
       matched.forEach((row, idx) => {
         const before = { ...row };
@@ -662,8 +736,10 @@ function makeExecutor(server, session, sql, values) {
           } else row[s.col.name] = coerce(s.col, v, idx + 1);
         }
         checkKeys(table, row, row);
-        if (Object.keys(row).some((k) => row[k] !== before[k])) changed++;
+        checkChildFks(table, row);
+        if (Object.keys(row).some((k) => row[k] !== before[k])) { changed++; replaced.push([before, row]); }
       });
+      if (replaced.length) checkParentRefs(table, replaced.map((x) => x[0]), new Map(replaced));
     } catch (e) {
       for (const [r, orig] of originals) Object.assign(r, orig);
       throw e;
@@ -680,10 +756,11 @@ function makeExecutor(server, session, sql, values) {
     checkPlaceholders();
     const table = tableOf(q);
     if (where) bindCols(where, table, 'where clause');
-    const keep = table.rows.filter((r) => where && !test(where, r));
-    const removed = table.rows.length - keep.length;
+    const gone = table.rows.filter((r) => !where || test(where, r));
+    checkParentRefs(table, gone);
+    const keep = table.rows.filter((r) => !gone.includes(r));
     table.rows = keep;
-    return header(removed);
+    return header(gone.length);
   }
 
   const first = p.next();
