@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { EXPECTED, problemsFor } from '../js/ratio.js';
 import { runProject } from '../engine/runner.js';
-import { runTests } from '../engine/test-runner.js';
+import { runTests, runCodeChecks } from '../engine/test-runner.js';
 
 const firstFile = (b) => Object.keys(b.files)[0];
 
@@ -37,15 +37,16 @@ for (const id of Object.keys(EXPECTED)) {
 
     test(`${id}/${b.id}: starter code does NOT pass its own tests`, async () => {
       const r = await run(b.files);
-      const results = r.ok ? await runTests(r.session, b.tests) : [];
-      assert.ok(!results.length || results.some((t) => !t.passed), 'starter must fail at least one test');
+      const results = [...runCodeChecks(b.files, b.codeChecks || []), ...(r.ok ? await runTests(r.session, b.tests) : [])];
+      assert.ok(!results.length || results.some((t) => !t.passed), 'starter must fail at least one test or code check');
     });
 
     if (b.solution) {
       test(`${id}/${b.id}: solution passes all tests`, async () => {
-        const r = await run({ ...b.files, [firstFile(b)]: b.solution });
+        const files = { ...b.files, [firstFile(b)]: b.solution };
+        const r = await run(files);
         assert.equal(r.ok, true, r.error && r.error.message);
-        const results = await runTests(r.session, b.tests);
+        const results = [...runCodeChecks(files, b.codeChecks || []), ...(await runTests(r.session, b.tests))];
         for (const t of results) assert.ok(t.passed, `${t.name}: ${t.checks.filter((c) => !c.ok).map((c) => c.message).join('; ')}`);
       });
     }
