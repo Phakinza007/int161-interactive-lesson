@@ -64,3 +64,23 @@ test('process.env exists and process.exit throws ProcessExit', () => {
   assert.deepEqual(m.process.env, {});
   assert.throws(() => m.process.exit(1), (e) => e.name === 'ProcessExit' && e.code === 1);
 });
+
+test('createServer(h1) then server.on("request", h2): both listeners run, h1 answers', async () => {
+  const { network, m } = setup();
+  const seen = [];
+  const server = m.http.createServer((req, res) => { seen.push('h1'); res.end('from h1'); });
+  server.on('request', () => { seen.push('h2'); });
+  server.listen(3000);
+  const r = await network.request({ path: '/' });
+  assert.equal(r.text, 'from h1');
+  assert.deepEqual(seen, ['h1', 'h2']);
+});
+
+test('async rejection from h1 still rejects the request when h2 exists', async () => {
+  const network = createNetwork({ onError() {} });
+  const m = createNodeModules({ network });
+  const server = m.http.createServer(async () => { throw new Error('async boom'); });
+  server.on('request', () => {});
+  server.listen(3000);
+  await assert.rejects(network.request({}), /async boom/);
+});

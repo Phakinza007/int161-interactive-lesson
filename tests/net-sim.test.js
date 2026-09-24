@@ -74,3 +74,11 @@ test('port option selects a specific server', async () => {
   assert.equal((await net.request({ port: 4000 })).text, 'b');
   assert.equal((await net.request({})).text, 'b'); // last listener wins
 });
+
+test('request host header is localhost:<port> of the listening server', async () => {
+  const net = createNetwork();
+  net.listen(3000, (req, res) => res.end(req.headers.host));
+  net.listen(4000, (req, res) => res.end(req.headers.host));
+  assert.equal((await net.request({ port: 3000 })).text, 'localhost:3000');
+  assert.equal((await net.request({})).text, 'localhost:4000');
+});

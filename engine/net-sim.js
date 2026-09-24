@@ -47,7 +47,8 @@ export function createNetwork({ onError = () => {}, responseTimeoutMs = 1500 } =
       if (!handler) {
         return Promise.reject(new Error('ยังไม่มี server ที่ listen อยู่ (ต้องเรียก server.listen(...) ก่อน)'));
       }
-      const reqHeaders = { host: 'localhost' };
+      const hostPort = port !== undefined ? port : ([...servers.keys()].pop() ?? 3000);
+      const reqHeaders = { host: `localhost:${hostPort}` };
       for (const [k, v] of Object.entries(headers)) reqHeaders[k.toLowerCase()] = String(v);
       let payload = body;
       if (payload !== undefined && typeof payload !== 'string') {

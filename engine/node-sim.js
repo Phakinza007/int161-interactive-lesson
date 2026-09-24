@@ -1,22 +1,25 @@
 import { EventEmitter } from './events.js';
 
 class Server extends EventEmitter {
-  #handler = null;
+  #handlers = [];
   #port = null;
   #network;
   listening = false;
   constructor(network, handler) {
     super();
     this.#network = network;
-    this.#handler = handler || null;
+    if (handler) this.#handlers.push(handler);
   }
   on(name, fn) {
-    if (name === 'request') { this.#handler = fn; return this; }
+    if (name === 'request') { this.#handlers.push(fn); return this; }
     return super.on(name, fn);
   }
   listen(port, ...rest) {
     this.#port = port;
-    this.#network.listen(port, (req, res) => this.#handler && this.#handler(req, res));
+    this.#network.listen(port, (req, res) => {
+      const pending = this.#handlers.map((h) => h(req, res)).filter((r) => r && typeof r.then === 'function');
+      return pending.length ? Promise.all(pending) : undefined;
+    });
     this.listening = true;
     const cb = rest.find((a) => typeof a === 'function');
     if (cb) setTimeout(cb, 0);
