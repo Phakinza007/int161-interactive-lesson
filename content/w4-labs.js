@@ -643,3 +643,4 @@ export const exercises = {
     ],
   },
 };
+export const SEED_SQL = SEED; // shared with W5/W6 fixtures
