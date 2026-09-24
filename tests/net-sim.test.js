@@ -82,3 +82,16 @@ test('request host header is localhost:<port> of the listening server', async ()
   assert.equal((await net.request({ port: 3000 })).text, 'localhost:3000');
   assert.equal((await net.request({})).text, 'localhost:4000');
 });
+
+test('after the first response timeout, later timeouts are much shorter (many unanswered tests stay fast)', async () => {
+  const net = createNetwork({ responseTimeoutMs: 200 });
+  net.listen(3000, () => {});
+  const t0 = Date.now();
+  await assert.rejects(net.request({}), /res\.end/);
+  const first = Date.now() - t0;
+  const t1 = Date.now();
+  for (let i = 0; i < 5; i++) await assert.rejects(net.request({}), /res\.end/);
+  const rest = Date.now() - t1;
+  assert.ok(first >= 190, `first took ${first}ms`);
+  assert.ok(rest < 400, `5 follow-ups took ${rest}ms`);
+});

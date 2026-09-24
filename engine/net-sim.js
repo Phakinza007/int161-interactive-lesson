@@ -39,6 +39,7 @@ function createResponse(resolve, onEnd) {
 
 export function createNetwork({ onError = () => {}, responseTimeoutMs = 1500 } = {}) {
   const servers = new Map();
+  let timedOut = false; // once a handler has proven unresponsive, later waits are short
   return {
     listen(port, handler) { servers.set(port, handler); },
     close(port) { servers.delete(port); },
@@ -56,10 +57,10 @@ export function createNetwork({ onError = () => {}, responseTimeoutMs = 1500 } =
         if (!reqHeaders['content-type']) reqHeaders['content-type'] = 'application/json';
       }
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(new Error('handler ไม่ได้เรียก res.end() ภายในเวลาที่กำหนด')),
-          responseTimeoutMs,
-        );
+        const timer = setTimeout(() => {
+          timedOut = true;
+          reject(new Error('handler ไม่ได้เรียก res.end() ภายในเวลาที่กำหนด'));
+        }, timedOut ? Math.min(responseTimeoutMs, 40) : responseTimeoutMs);
         const fail = (err) => { clearTimeout(timer); onError(err); reject(err); };
         const req = new EventEmitter();
         req.method = String(method).toUpperCase();
