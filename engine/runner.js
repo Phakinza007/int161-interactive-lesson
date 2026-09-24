@@ -2,6 +2,7 @@ import { createNetwork } from './net-sim.js';
 import { createNodeModules } from './node-sim.js';
 import { createLoader } from './loader.js';
 import { createMysqlModules } from './mysql-sim.js';
+import { createExpressModules } from './express-sim.js';
 
 export function formatArgs(args) {
   return args.map((a) => {
@@ -36,7 +37,7 @@ export async function runProject({ files, entry, fixtures = {}, buildModules }) 
   };
   const onIdle = (fn) => { idleHooks.push(fn); };
   const ctx = { network, fixtures, console, track, onIdle };
-  const builtins = { ...node, ...createMysqlModules(ctx), ...(buildModules ? buildModules(ctx) : {}) };
+  const builtins = { ...node, ...createMysqlModules(ctx), ...createExpressModules(ctx), ...(buildModules ? buildModules(ctx) : {}) };
   const session = { request: (req) => network.request(req), network, logs };
   const loader = createLoader({ files, builtins, globals: { console, process: node.process } });
   try {
