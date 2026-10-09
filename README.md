@@ -40,3 +40,7 @@ npm run check-ratio # ตรวจสัดส่วนแนวคิด:ทด
 | `js/` `css/` | UI: hub, หน้าเรียน, editor, ตัวยิง request, ความคืบหน้า |
 | `content/` | เนื้อหารายสัปดาห์ (ข้อมูลล้วน ๆ) |
 | `tests/` | `node --test` สำหรับ engine/store/content |
+
+## พื้นที่ฝึกรวม
+
+บทเรียนและแบบฝึก W1–W6 อยู่ใน [Knowledge Web](https://knowledge-web-one.vercel.app/practice#int161) แล้ว เว็บเดิมยังใช้งานได้ กด **ส่งออกงานเพื่อย้ายเข้าเว็บรวม** ที่หน้าแรก แล้วนำไฟล์ JSON ไปนำเข้าในเว็บรวม
