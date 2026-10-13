@@ -1,7 +1,8 @@
+import { enrichModule } from './transcript-learning.js';
 import { concepts as C } from './w5-concepts.js';
 import { experiments as E, exercises as X } from './w5-labs.js';
 
-export default {
+export default enrichModule({
   id: 'w5',
   title: 'Express.js Framework',
   sources: ['week5/05-INT161-Express-Framework.pdf', 'week6/06-INT161-Error Handling.pdf (ตัวอย่าง logger)'],
@@ -14,4 +15,4 @@ export default {
     C.middleware, E.middlewareOrder, X.middlewareLogger,
     E.layeredCrud, X.routeRead, X.routeCreate, X.routeUpdateDelete, X.appWiring,
   ],
-};
+});

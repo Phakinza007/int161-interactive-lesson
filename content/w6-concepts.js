@@ -12,7 +12,7 @@ const DG = {
       { id: 'e', label: 'Error เกิดขึ้น', sub: 'throw / reject', col: 0, row: 0, tone: 'danger' },
       { id: 'q', label: 'มีใครจับไหม?', sub: 'try…catch / error middleware', col: 1, row: 0, tone: 'concept' },
       { id: 'ok', label: 'จัดการแล้วตอบ client', sub: 'server ทำงานต่อ', col: 2, row: 0, tone: 'ok' },
-      { id: 'bad', label: 'Node.js จบโปรเซส', sub: 'process.exit(1) → server ล่ม', col: 2, row: 1, tone: 'danger' },
+      { id: 'bad', label: 'Node.js จบโปรเซส', sub: 'uncaught exception → โปรเซสจบ', col: 2, row: 1, tone: 'danger' },
     ],
     edges: [{ from: 'e', to: 'q' }, { from: 'q', to: 'ok', label: 'จับได้', tone: 'ok' }, { from: 'q', to: 'bad', label: 'ไม่มี', tone: 'danger' }],
   }),
@@ -61,7 +61,7 @@ export const concepts = {
     source: `${SRC} §Unit Objectives, §What is an Exception/Error?, §Why Error Handling Matters`,
     body: `<p><b>เมื่อจบบทนี้ควรทำได้:</b> เรียนรู้การจัดการ error ด้วย Express middleware · ออกแบบ global error handling ใน Node/Express ตาม best practice</p>
       <ul><li><b>Exception/Error</b> คือเหตุการณ์หรือเงื่อนไขที่ขัดขวางการทำงานปกติของโปรแกรม</li>
-      <li>ถ้าโยน exception แล้วไม่มีใครจับ Node.js จะ<b>สิ้นสุดโปรเซส</b> (<code>process.exit(1)</code>) ทำให้ backend server ทั้งตัวล่ม</li>
+      <li>ถ้าเกิด uncaught exception นอกกลไกที่จัดการไว้ Node.js จะ<b>สิ้นสุดโปรเซสโดยปริยาย</b> ทำให้ backend server ล่ม; ไม่ใช่ว่าทุก error ที่ route โยนจะทำให้ Express ล่ม เพราะ Express มีกลไกรับ error ของ handler</li>
       <li><b>Error เป็น object</b> — ห่อหุ้มเงื่อนไขที่ไม่คาดคิดไว้ในออบเจกต์</li></ul>
       <p><b>ทำไมต้องจัดการ error:</b></p>
       <ul><li>ป้องกันแอปล่ม/downtime</li><li>ประสบการณ์ผู้ใช้ที่ดี (ข้อความ error ที่เป็นมิตร)</li><li>ป้องกันข้อมูลสำคัญรั่ว (เช่น stack trace)</li><li>ช่วย debug, monitoring และ alerting</li></ul>
@@ -98,6 +98,7 @@ export const concepts = {
       <li><b>Forward ด้วย <code>next(err)</code></b> — Express จะข้าม middleware/route ปกติทั้งหมดไปที่ error-handling middleware โดยตรง</li>
       <li><b>Error-handling middleware</b> — ลายเซ็น <code>(err, req, res, next)</code> (ต่างจากปกติที่เป็น <code>(req, res, next)</code>)</li>
       <li><b>ส่ง response</b> พร้อม status code และข้อความ/JSON ที่เหมาะสม</li></ol>
+      <p class="muted">รายละเอียดเพิ่มเติม: template ของวิชานี้ใช้ Express 5 ซึ่งส่ง rejected Promise ที่ handler คืนเข้าทาง error handler ให้อัตโนมัติ; สำหรับ callback นอก Promise ที่คืนจาก handler ให้ส่ง error ผ่าน <code>next(err)</code> เอง <a href="https://expressjs.com/en/guide/error-handling/">อ่านเอกสาร Express</a></p>
       <p>ต้อง<b>ประกาศไว้ท้ายสุด</b> หลังทุก route/middleware · ถ้าไม่มี error handler Express จะส่ง <b>หน้า HTML error แบบ default</b> (แสดง stack trace ในโหมด dev)</p>`,
   },
 

@@ -1,3 +1,4 @@
+import { createLearningIntro, createLearningSteps, createLearningReview } from './learning.js';
 import { h } from './dom.js';
 import { WIDGETS } from './widgets.js';
 import { createRunPanel } from './runpanel.js';
@@ -16,12 +17,14 @@ export function renderBlock(block, ctx) {
       h('span', { class: `badge badge-${block.type}` }, BADGE[block.type]),
       h('h2', {}, block.title),
       h('span', { class: 'check', 'aria-label': 'เสร็จแล้ว' }, '✓')),
+    block.learning && createLearningIntro(block.learning),
     block.body && h('div', { class: 'prose', html: block.body }),
     block.diagram && h('figure', { class: 'diagram' },
       h('div', { class: 'diagram-svg', html: block.diagram }),
       block.diagramCaption && h('figcaption', {}, block.diagramCaption)),
   ].filter(Boolean));
 
+  if (block.learning?.steps?.length) el.append(createLearningSteps(block.learning));
   if (block.widget) {
     const host = h('div', { class: 'widget' });
     const build = WIDGETS[block.widget];
@@ -34,6 +37,7 @@ export function renderBlock(block, ctx) {
   } else if (block.widget && !block.files) {
     el.append(h('button', { class: 'btn read', onclick: done }, 'ลองแล้ว ✓'));
   }
+  if (block.learning) el.append(createLearningReview(block.learning));
   if (block.source) el.append(h('div', { class: 'source' }, `ที่มา: ${block.source}`));
   return el;
 }

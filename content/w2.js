@@ -1,7 +1,8 @@
+import { enrichModule } from './transcript-learning.js';
 import { concepts as C } from './w2-concepts.js';
 import { experiments as E, exercises as X } from './w2-labs.js';
 
-export default {
+export default enrichModule({
   id: 'w2',
   title: 'HTTP Programming Basics',
   sources: ['week2/W02-http-programming-basics.md'],
@@ -17,4 +18,4 @@ export default {
     E.pathSegments, X.pathSegments, X.pathVar,
     X.multiplication, X.esm,
   ],
-};
+});

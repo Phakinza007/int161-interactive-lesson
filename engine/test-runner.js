@@ -50,12 +50,12 @@ export async function runTests(session, tests, vars = {}, hints = {}) {
     for (const step of t.steps) {
       const label = `${step.request.method || 'GET'} ${step.request.path || '/'}`;
       const add = (what, ok, got, want) =>
-        checks.push({ label: `${label} → ${what}`, ok, message: ok ? '' : `ได้ ${got} คาดหวัง ${want}` });
+        checks.push({ label: `${label} → ${what}`, ok, actual: got, expected: want, message: ok ? '' : `ได้ ${got} คาดหวัง ${want}` });
       let res;
       try {
         res = await session.request(step.request);
       } catch (e) {
-        checks.push({ label, ok: false, message: `ยิง request ไม่สำเร็จ: ${e.message}` });
+        checks.push({ label, ok: false, actual: e.message, expected: 'ส่ง request สำเร็จ', message: `ยิง request ไม่สำเร็จ: ${e.message}` });
         continue;
       }
       const ex = step.expect || {};
@@ -64,13 +64,13 @@ export async function runTests(session, tests, vars = {}, hints = {}) {
       if ('jsonMatch' in ex) {
         const isObj = res.json !== null && typeof res.json === 'object';
         const ok = isObj && Object.entries(ex.jsonMatch).every(([k, v]) => deepEqual(getPath(res.json, k), v));
-        checks.push({ label: `${label} → json (บางส่วน)`, ok, message: ok ? '' : isObj ? `ได้ ${show(res.json)} คาดหวังให้มี ${show(ex.jsonMatch)}` : `response ไม่ใช่ JSON (ได้ ${show(res.text.slice(0, 80))})` });
+        checks.push({ label: `${label} → json (บางส่วน)`, ok, actual: show(res.json ?? res.text), expected: show(ex.jsonMatch), message: ok ? '' : isObj ? `ได้ ${show(res.json)} คาดหวังให้มี ${show(ex.jsonMatch)}` : `response ไม่ใช่ JSON (ได้ ${show(res.text.slice(0, 80))})` });
       }
       if ('jsonHasKeys' in ex) {
         const isObj = res.json !== null && typeof res.json === 'object';
         const lacking = isObj ? ex.jsonHasKeys.filter((k) => !hasPath(res.json, k)) : ex.jsonHasKeys;
         const ok = isObj && lacking.length === 0;
-        checks.push({ label: `${label} → json keys`, ok, message: ok ? '' : isObj ? `ไม่มี key: ${lacking.join(', ')}` : `response ไม่ใช่ JSON` });
+        checks.push({ label: `${label} → json keys`, ok, actual: show(res.json ?? res.text), expected: `มี keys: ${ex.jsonHasKeys.join(', ')}`, message: ok ? '' : isObj ? `ไม่มี key: ${lacking.join(', ')}` : `response ไม่ใช่ JSON` });
       }
       if ('text' in ex) add('text', res.text === ex.text, show(res.text), show(ex.text));
       if ('textIncludes' in ex) {
@@ -88,7 +88,7 @@ export async function runTests(session, tests, vars = {}, hints = {}) {
       const lines = (session.logs || []).map((l) => l.text);
       for (const want of t.logIncludes) {
         const ok = lines.some((l) => l.includes(want));
-        checks.push({ label: `console → ${want}`, ok, message: ok ? '' : `ไม่พบบรรทัดที่มี ${show(want)} ใน output (ได้: ${show(lines)})` });
+        checks.push({ label: `console → ${want}`, ok, actual: show(lines), expected: `มีข้อความ ${show(want)}`, message: ok ? '' : `ไม่พบบรรทัดที่มี ${show(want)} ใน output (ได้: ${show(lines)})` });
       }
     }
     results.push({ name: t.name, passed: checks.every((c) => c.ok), checks });

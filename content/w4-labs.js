@@ -623,7 +623,7 @@ export const exercises = {
     files: project(P.service, { [P.service]: SERVICE_HEAD + SERVICE_CREATE_NODUP + SERVICE_TAIL }),
     solution: SERVICE,
     tests: [
-      { name: 'POST รหัสวิชาซ้ำ (INT 100) → 409 ไม่ตาย', steps: [call('POST', '/subjects', { subject_code: 'INT 100', subject_title: 'Dup', credit: 1 }, { status: 409, textIncludes: '"error"' })] },
+      { name: 'POST ซ้ำ → 409 แล้ว GET เดิมยังทำงาน', steps: [call('POST', '/subjects', { subject_code: 'INT 100', subject_title: 'Dup', credit: 1 }, { status: 409, textIncludes: '"error"' }), call('GET', '/subjects/1', null, { status: 200, json: S1 })] },
       { name: 'POST รหัสวิชาใหม่ → 201', steps: [call('POST', '/subjects', NEW_A, { status: 201, json: { id: 18, ...NEW_A } })] },
     ],
   },

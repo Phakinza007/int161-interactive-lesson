@@ -19,7 +19,7 @@ export function createStore(storage = defaultStorage()) {
     try {
       const raw = storage.getItem(KEY);
       const v = raw ? JSON.parse(raw) : null;
-      if (v && typeof v === 'object') return { done: v.done || {}, code: v.code || {} };
+      if (v && typeof v === 'object') return { done: v.done || {}, code: v.code || {}, lastVisited: v.lastVisited || null };
     } catch { /* fall through */ }
     return mem;
   }
@@ -31,6 +31,12 @@ export function createStore(storage = defaultStorage()) {
   }
 
   return {
+    getLastVisited: () => read().lastVisited || null,
+    setLastVisited(moduleId, blockId) {
+      const d = read();
+      d.lastVisited = { moduleId, blockId };
+      write(d);
+    },
     isDone: (m, b) => !!read().done[m]?.[b],
     markDone(m, b) {
       const d = read();

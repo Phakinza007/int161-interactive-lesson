@@ -1,7 +1,8 @@
+import { enrichModule } from './transcript-learning.js';
 import { concepts as C } from './w1-concepts.js';
 import { experiments as E, exercises as X } from './w1-labs.js';
 
-export default {
+export default enrichModule({
   id: 'w1',
   title: 'Introduction to Web Application & Node.js',
   sources: ['week1/W01-Introduction.md'],
@@ -15,4 +16,4 @@ export default {
     X.hello, X.user, X.notFound,
     C.backendSummary,
   ],
-};
+});

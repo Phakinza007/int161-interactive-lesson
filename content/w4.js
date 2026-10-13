@@ -1,7 +1,8 @@
+import { enrichModule } from './transcript-learning.js';
 import { concepts as C } from './w4-concepts.js';
 import { experiments as E, exercises as X } from './w4-labs.js';
 
-export default {
+export default enrichModule({
   id: 'w4',
   title: 'Database Connection',
   sources: ['week4/W04-database-connection.md'],
@@ -16,4 +17,4 @@ export default {
     C.crudLogic,
     X.businessDup, X.sqlInjection,
   ],
-};
+});

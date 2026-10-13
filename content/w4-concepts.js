@@ -22,8 +22,8 @@ const DG = {
       { id: 'a2', label: 'createConnection', sub: '1 ครั้ง = 1 connection ใหม่\n(เปลือง ต้องปิดเอง)', col: 1, row: 0, tone: 'danger' },
       { id: 'a3', label: 'MySQL', sub: 'connection พุ่งตามคนเข้า', col: 2, row: 0 },
       { id: 'b1', label: 'Request ×N', col: 0, row: 1 },
-      { id: 'b2', label: 'createPool', sub: 'สร้างไว้ล่วงหน้า เช่น 8 ตัว\nเวียนใช้ · ไม่ปิด', col: 1, row: 1, tone: 'exercise' },
-      { id: 'b3', label: 'MySQL', sub: 'connection คงที่', col: 2, row: 1 },
+      { id: 'b2', label: 'createPool', sub: 'สร้างเพิ่มตามการใช้งาน\nเวียนใช้ · จำกัดด้วย connectionLimit', col: 1, row: 1, tone: 'exercise' },
+      { id: 'b3', label: 'MySQL', sub: 'เวียนใช้ connection', col: 2, row: 1 },
     ],
     edges: [{ from: 'a1', to: 'a2' }, { from: 'a2', to: 'a3' }, { from: 'b1', to: 'b2' }, { from: 'b2', to: 'b3' }],
   }) + flow({
@@ -85,13 +85,14 @@ export const concepts = {
   connect: {
     type: 'concept', id: 'c-connect', diagram: DG.connect, diagramCaption: 'Connection vs Pool และรูปร่างผลลัพธ์', title: 'ต่อ database จาก Node.js: mysql2, Pool และรูปร่างของผลลัพธ์',
     source: `${SRC} §05 ขั้นตอนการเชื่อม database, §06 รู้จักไลบรารี mysql2, §07 Connection กับ Pool, §08 Callback vs async/await`,
-    body: `<p><b>3 ขั้นตอน:</b> 1) ติดตั้ง driver: <code>npm install mysql2</code> (MySQL ≥ 5.2 ใช้ <code>mysql2</code> ต่ำกว่านั้นใช้ <code>mysql</code>) 2) สร้าง Connection หรือ Pool 3) ส่ง SQL ด้วย <code>await pool.query("SQL Command")</code></p>
+    body: `<p><b>3 ขั้นตอน:</b> 1) ติดตั้ง driver: <code>npm install mysql2</code> (บทนี้เลือกใช้ driver <code>mysql2</code>) 2) สร้าง Connection หรือ Pool 3) ส่ง SQL ด้วย <code>await pool.query("SQL Command")</code></p>
       ${code("import * as mysql from 'mysql2/promise'\nconst pool = mysql.createPool({\n    host: 'localhost',\n    user: 'root',\n    password: '<your-password>',\n    database: 'sampledb'\n})")}
       <table><tr><th></th><th><code>createConnection</code></th><th><code>createPool</code></th></tr>
-      <tr><td>จำนวน</td><td>เรียกครั้งหนึ่ง = instance ใหม่หนึ่งตัว</td><td>สร้างไว้ล่วงหน้าหลายตัว (เช่น 8) แล้วเวียนใช้</td></tr>
-      <tr><td>คนเข้าเยอะ</td><td>สร้างใหม่ทุกครั้ง → เปลืองและ DB รับไม่ไหว</td><td>ใครว่างหยิบไปใช้ ไม่พอค่อยเพิ่มทีละสเต็ป</td></tr>
-      <tr><td>การปิด</td><td>ต้องจัดการเอง</td><td><b>ไม่ปิด</b> เวียนใช้เรื่อย ๆ</td></tr></table>
-      <p><i>(จาก transcript)</i> โลกปัจจุบันใช้ connection pooling · การสร้าง connection เหมือนโทรหาลูกค้าให้ติดก่อนแล้วค่อยคุย · สร้างเสร็จแล้วคุยเหมือนกันหมด</p>
+      <tr><td>จำนวน</td><td>เรียกครั้งหนึ่ง = instance ใหม่หนึ่งตัว</td><td>สร้าง connection เมื่อจำเป็น แล้วเวียนใช้ภายใน connectionLimit</td></tr>
+      <tr><td>คนเข้าเยอะ</td><td>สร้างใหม่ทุกครั้ง → เปลืองและ DB รับไม่ไหว</td><td>ใช้ connection ที่ว่าง หรือสร้างเพิ่มได้ไม่เกินขีดจำกัด</td></tr>
+      <tr><td>การปิด</td><td>ต้องจัดการเอง</td><td>query ผ่าน pool แล้วคืน connection ให้เวียนใช้; ปิดทั้ง pool ด้วย <code>pool.end()</code> เมื่อเลิกใช้</td></tr></table>
+      <p><i>(จาก transcript)</i> ในคาบอธิบายการใช้ connection pooling · การสร้าง connection เหมือนโทรหาลูกค้าให้ติดก่อนแล้วค่อยคุย · สร้างเสร็จแล้วคุยเหมือนกันหมด</p>
+      <p class="muted">รายละเอียดเพิ่มเติม: mysql2 สร้าง connection ตามการใช้งาน ไม่ได้เปิดครบตามขีดจำกัดทันที <a href="https://sidorares.github.io/node-mysql2/docs#using-connection-pools">อ่านเอกสาร mysql2</a></p>
       <p><b>Callback vs async/await:</b> แบบ callback ใส่ฟังก์ชันเป็นอาร์กิวเมนต์ตัวสุดท้าย โค้ดยาวและซ้อนหลายชั้น แบบ async/await สั้นกว่า <b>แต่ต้อง import จาก <code>mysql2/promise</code></b> ถ้าไม่ใส่ <code>/promise</code> จะได้ callback API แล้วใช้ <code>await</code> ไม่ได้</p>
       <p><b>รูปร่างผลลัพธ์:</b> <code>pool.query()</code> คืน array 2 ช่อง <code>[rows, fields]</code></p>
       <table><tr><th>คำสั่ง</th><th><code>[0]</code></th><th><code>[1]</code></th></tr>
@@ -108,6 +109,7 @@ export const concepts = {
       <li><code>create()</code> เอา <code>result.insertId</code> ไป <code>findById()</code> เพราะ id เป็น auto_increment รู้ล่วงหน้าไม่ได้ · <code>remove()</code> ตัดสินจาก <code>affectedRows &gt; 0</code></li></ul>
       <p class="muted">⚠ สองจุดที่โค้ดบนสไลด์ไม่ตรงกับที่ทำจริงในคาบ: <code>findById()</code> ต้อง <code>return subject[0]</code> (SELECT ได้ array) และใช้ชื่อฟิลด์จริง <code>subject.subject_code</code>, <code>subject.subject_title</code> แทน <code>subject.code/title</code></p>
       <p><b>async/await ลามทั้งเส้น</b> <i>(จาก transcript)</i>: repository (async) ← service (await → async) ← router (await → async) ← server (await → async) — เติมแค่ <code>async</code>/<code>await</code> ไม่ได้แก้ตรรกะเลย ถ้าลืมจะได้ response ว่างเปล่าทั้งที่ไม่มี error เพราะ response ถูกส่งก่อน Promise resolve · และ <code>id</code> ตอนนี้คือ primary key ตัวเลข (ยิง <code>GET /subjects/1</code>)</p>
+      <p class="muted">คำศัพท์ในคาบใช้ Prepared Statement กับตัวอย่าง <code>query(sql, values)</code> ที่ใส่ placeholder; ใน mysql2 การ prepare/execute ฝั่ง server ใช้ <code>execute()</code> โดยเฉพาะ บทนี้ฝึกส่งค่าแยกจาก SQL ตามโค้ดในคาบ <a href="https://sidorares.github.io/node-mysql2/docs#using-prepared-statements">อ่านความต่างในเอกสาร mysql2</a></p>
       <p><b>อ่าน request body:</b> body ไม่ได้มาครั้งเดียวจบ แต่เป็น chunk ทีละก้อน (stream) จึงต้อง <code>request.on('data')</code> สะสมเป็น string · <code>request.on('end')</code> แล้วค่อย <code>JSON.parse</code> · <code>request.on('error')</code> แล้ว <code>reject</code> — ห่อใน <code>new Promise</code> เพื่อให้ <code>await getBody(...)</code> ได้ (ถ้าใช้ framework เช่น Express จะไม่ต้องเขียนเอง)</p>`,
   },
 

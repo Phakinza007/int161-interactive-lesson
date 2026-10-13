@@ -1,0 +1,93 @@
+{
+  "reviewedOn": "2026-10-13",
+  "sources": [
+    {
+      "file": "week1/INT161_G2_20260806.docx",
+      "date": "2026-08-06",
+      "mappedModules": [
+        "w1"
+      ],
+      "sha256": "462f9c813acc8b1657b1e4299ea8441711d77679d7325fe195e00ee809f9b9fc",
+      "textSha256": "364e9aa8a691bf5ca851133810bf5862cf22d8de933320e1fc09433f5f0d29b4",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week2/INT161_G2_20260813.docx",
+      "date": "2026-08-13",
+      "mappedModules": [
+        "w2"
+      ],
+      "sha256": "8e9c15dec998e1851d5d7b522cae560cb4d52cca0e645a1e8f3be152cf5f7b47",
+      "textSha256": "34d9f842f8f70f182d18a0def8a2f0009b23af2d3227d242131b51bfe9beaa9d",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week3/INT161_G2_20260820.docx",
+      "date": "2026-08-20",
+      "mappedModules": [
+        "w3"
+      ],
+      "sha256": "350ae18d01f347ef40e2518a9e262245d66b9612eea8f5b6fda6ddf470bb614e",
+      "textSha256": "e1167110d00e9ba06579e9751f33323be3d9bb1e4215c751987c7014e04e4b88",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week4/INT161_G2_20260827.docx",
+      "date": "2026-08-27",
+      "mappedModules": [
+        "w4"
+      ],
+      "sha256": "36465a4554af3a4f6bab735e04b8ec086072cae5ecf2bf698627311bbc37646a",
+      "textSha256": "35bc2b804e21cced701081e2e9ee838649984e92e562e0bf4557cdeb4ae2249b",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week4/INT161_G2_20260827-downloaded-20261013.docx",
+      "date": "2026-08-27",
+      "mappedModules": [
+        "w4"
+      ],
+      "sha256": "acedaa86d1df6353efc3138f8ce2b8daf3bdced8004d8ec8f112a479b024eba4",
+      "textSha256": "35bc2b804e21cced701081e2e9ee838649984e92e562e0bf4557cdeb4ae2249b",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week5/INT161_G2_20260903.docx",
+      "date": "2026-09-03",
+      "mappedModules": [
+        "w5"
+      ],
+      "sha256": "9faeaecc2bd3fb8600d5e1fb27eb6cc42084817698e81de4fc3823e729ef1e14",
+      "textSha256": "f2bb6a7e6a6fab00b6264b1ee553fbb499dc378880484acc00f5c595b5adfd39",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week7/INT161_G2_20260924.docx",
+      "date": "2026-09-24",
+      "mappedModules": [
+        "w6"
+      ],
+      "sha256": "9956f13c9bb5aa59af3abf890895041e834d896e058c8968d33e0930449c15d1",
+      "textSha256": "c37d34274df980b55ed7aa1c77a7e94e7e62827d6a605a4e80e4a25139303134",
+      "locatorType": "topic search"
+    },
+    {
+      "file": "week8/INT161_G2_20261001.vtt",
+      "date": "2026-10-01",
+      "mappedModules": [
+        "w6"
+      ],
+      "sha256": "394cc8f798fadca8716ac725a943d93f049726a1636a079485ffbd889b96295b",
+      "textSha256": "9f1244442b4886d96bde7f84d836c17141ec958645beacff9a9597e0c448f14a",
+      "locatorType": "cue timestamp"
+    },
+    {
+      "file": "week9/INT161_G2_20261008.docx",
+      "date": "2026-10-08",
+      "mappedModules": [],
+      "sha256": "9dd75017c24edd67bea9220f14dde7299bb06ac029ece829389fad752c34dd84",
+      "textSha256": "c88852172ad109ba7287fab47813aeea00eaa9024808f35553be22495ccd6b74",
+      "locatorType": "topic search"
+    }
+  ]
+}
