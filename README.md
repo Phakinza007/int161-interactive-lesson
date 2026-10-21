@@ -74,3 +74,9 @@ The source mapping and accuracy notes are in [the transcript audit](docs/reviews
 ## Backend Visual Guide
 
 เปิด [backend-guide.html](backend-guide.html) จากหน้าแรกหรือบท theory/midterm เพื่อดูแผนภาพ Backend แบบกดเลือกcomponent มีหน้าที่/input-output/โค้ด/ข้อควรระวัง พร้อม7request traces, Pagination playground และ9หัวข้ออ่านต่อ ภาพSVGและscriptอยู่ในHTMLเดียว ไม่มีCDN การเดินrequestเป็นการจำลองเพื่ออธิบาย ไม่ใช่การqueryฐานจริง บันทึกHTMLไว้เปิดอ่านออฟไลน์ได้
+
+### โครงงาน Students API พร้อมโค้ด
+
+เปิด [Visual guide → Project](backend-guide.html#project) เพื่อเลือกอ่านแต่ละไฟล์พร้อมสีโค้ด หรือดาวน์โหลด [project.zip](project.zip) ซึ่งมี folder `project/` พร้อม `package.json`, `src/app.js`, `db.js`, `errors.js` และ student routes/controller/service/repository/mapper ครบทุกไฟล์ ดูขั้นตอนรันใน [project/README.md](project/README.md)
+
+โครงนี้เป็นตัวอย่างที่จัดทำเพิ่มสำหรับอ้างอิง 1C/3R/1U/1D ไม่ใช่โจทย์หรือเฉลยจริงของอาจารย์ ปรับ schema, DTO, route และ status ให้ตรงสเปกสอบก่อนใช้

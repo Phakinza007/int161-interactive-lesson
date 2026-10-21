@@ -1,0 +1,9 @@
+{
+  "name": "int161-students-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.9.0"},
+  "scripts": {"start": "node --env-file-if-exists=.env src/app.js"},
+  "dependencies": {"express": "5.2.1", "mysql2": "3.24.3"}
+}
