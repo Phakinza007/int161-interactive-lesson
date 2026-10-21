@@ -18,7 +18,7 @@ test('request traces preserve repository/service/mapper return order and isolate
  assert.deepEqual(get.slice(5),['repository','database','repository','service','mapper','service','controller','response']);
  assert.ok(!scenarios.missing.steps.some(s=>s.component==='mapper'));
  assert.ok(scenarios.missing.steps.some(s=>s.component==='error'));
- for(const scene of Object.values(scenarios))for(const step of scene.steps){assert.ok(components[step.component]);assert.ok(step.value);}
+ for(const scene of Object.values(scenarios)){assert.ok(scene.steps.some(s=>s.component==='middleware'));assert.ok(scene.steps.some(s=>s.component==='router'));for(const step of scene.steps){assert.ok(components[step.component]);assert.ok(step.value);}}
  assert.match(scenarios.delete.steps.at(-1).value,/204.*end\(\)/);
 });
 test('existing study pages and home navigation expose the new visual guide',()=>{
