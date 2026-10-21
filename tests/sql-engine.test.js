@@ -286,3 +286,15 @@ test('keys work with camelCase column names: PRIMARY, UNIQUE and composite dupli
   rejectsWith(() => s.query("INSERT INTO payments VALUES (103, 'HQ1', 9)"), 'ER_DUP_ENTRY', 1062, "Duplicate entry '103-HQ1' for key 'payments.PRIMARY'");
   assert.equal(s.query("INSERT INTO payments VALUES (104, 'HQ1', 9)").header.affectedRows, 1);
 });
+
+
+test('pagination binds WHERE, LIMIT and OFFSET in order and handles empty pages', () => {
+  const { s } = setup();
+  assert.deepEqual(s.query('SELECT id FROM subjects WHERE credit = ? ORDER BY id LIMIT ? OFFSET ?', [3, 1, 1]).rows, [{ id: 2 }]);
+  assert.deepEqual(s.query('SELECT id FROM subjects ORDER BY id LIMIT ?, ?', [1, 2]).rows, [{ id: 2 }, { id: 3 }]);
+  assert.deepEqual(s.query('SELECT id FROM subjects LIMIT ? OFFSET ?', [2, 99]).rows, []);
+  assert.deepEqual(s.query('SELECT id FROM subjects LIMIT ?', [0]).rows, []);
+  for (const value of [-1, 1.5, 'abc', null]) assert.throws(() => s.query('SELECT id FROM subjects LIMIT ?', [value]));
+  assert.throws(() => s.query('SELECT id FROM subjects LIMIT ? OFFSET ?', [1]));
+  assert.throws(() => s.query('SELECT id FROM subjects LIMIT 1 OFFSET'));
+});

@@ -5,6 +5,8 @@ export const EXPECTED = {
   w4: { concept: 4, experiment: 5, exercise: 11 },
   w5: { concept: 6, experiment: 5, exercise: 9 },
   w6: { concept: 5, experiment: 5, exercise: 10 },
+  w7: { concept: 6, experiment: 3, exercise: 3 },
+  midterm: { concept: 6, experiment: 1, exercise: 6 },
 };
 
 const TYPES = ['concept', 'experiment', 'exercise'];

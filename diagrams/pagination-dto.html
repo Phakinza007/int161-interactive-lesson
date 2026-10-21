@@ -1,0 +1,30 @@
+<!doctype html><html lang="th"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pagination และ DTO</title><style>body{margin:0;padding:24px;font-family:system-ui,sans-serif}h1{font-size:24px}.diagram-container{max-width:100%;min-width:0;width:100%;overflow-x:auto}@media print{.diagram-container{overflow-x:visible}}</style><h1>Pagination และ DTO ในหนึ่ง request</h1><p>Architecture · fit · 800×600 · 6 nodes · สีและฟอนต์จากเว็บ INT161 · ไม่ต้องโหลดฟอนต์ออนไลน์</p><div class="diagram-container"><svg xmlns="http://www.w3.org/2000/svg" class="dd-api" viewBox="0 0 800 600" role="img" aria-labelledby="pagination-dto-title pagination-dto-desc">
+<title id="pagination-dto-title">Pagination และ DTO ในหนึ่ง request</title>
+<desc id="pagination-dto-desc">Request ส่ง page และ limit ไปตรวจค่า ก่อน repository อ่านรายการและจำนวนทั้งหมดจาก MySQL แล้ว mapper เลือกฟิลด์ DTO และ response ส่ง metadata กลับ</desc>
+<style>
+.dd-api{--paper:#fff;--ink:#15171c;--muted:#59616e;--accent:#2f6fed;--tint:#edf3ff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;min-width:800px;width:100%;display:block}
+.dd-api .canvas{fill:var(--paper)}.dd-api .box{fill:var(--paper);stroke:var(--muted);stroke-width:1}
+.dd-api .focus{fill:var(--tint);stroke:var(--accent)}.dd-api .name{fill:var(--ink);font-size:16px;font-weight:600}
+.dd-api .sub{fill:var(--muted);font-size:12px;font-family:Menlo,Consolas,monospace}.dd-api .heading{fill:var(--ink);font-size:28px;font-weight:600}
+.dd-api .note{fill:var(--muted);font-size:16px}.dd-api .edge{fill:none;stroke:var(--muted);stroke-width:1.5}
+@media(prefers-color-scheme:dark){.dd-api{--paper:#161d2e;--ink:#e8ecf6;--muted:#9aa5c0;--accent:#6ea8fe;--tint:#1c2540}}
+@media print{.dd-api{min-width:0}}
+</style>
+<defs><marker id="pagination-dto-arrow" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 8 4 L 0 8 Z" fill="#59616e"/></marker></defs>
+<rect class="canvas" x="0" y="0" width="800" height="600"/>
+<text class="heading" x="40" y="56">หนึ่งหน้า · เฉพาะข้อมูลที่ตกลงกัน</text>
+<text class="note" x="40" y="92">Request → ตรวจค่า → อ่านข้อมูล → แปลง DTO → Response</text>
+<g class="edge" marker-end="url(#pagination-dto-arrow)">
+<path d="M 176 188 H 232"/><path d="M 368 188 H 424"/><path d="M 560 188 H 616"/>
+<path d="M 684 240 V 388 Q 684 396 676 396 H 560"/><path d="M 424 396 H 368"/>
+</g>
+<g><rect class="box" x="40" y="136" width="136" height="104" rx="6"/><text class="name" x="56" y="176">Request</text><text class="sub" x="56" y="208">page=2, limit=2</text></g>
+<g><rect class="box focus" x="232" y="136" width="136" height="104" rx="6"/><text class="name" x="248" y="176">Middleware</text><text class="sub" x="248" y="208">offset = 2</text></g>
+<g><rect class="box" x="424" y="136" width="136" height="104" rx="6"/><text class="name" x="440" y="176">Repository</text><text class="sub" x="440" y="208">LIMIT / OFFSET</text></g>
+<g><rect class="box" x="616" y="136" width="136" height="104" rx="6"/><text class="name" x="632" y="176">MySQL</text><text class="sub" x="632" y="208">items + total</text></g>
+<g><rect class="box focus" x="424" y="344" width="136" height="104" rx="6"/><text class="name" x="440" y="384">DTO Mapper</text><text class="sub" x="440" y="416">id,name,price</text></g>
+<g><rect class="box" x="232" y="344" width="136" height="104" rx="6"/><text class="name" x="248" y="384">Response</text><text class="sub" x="248" y="416">data + metadata</text></g>
+<text class="note" x="40" y="504">Service ประสาน repository กับ mapper; route ส่ง HTTP response กลับ client</text>
+<text class="note" x="40" y="540">ลูกศรคือทิศทางส่งต่อข้อมูล · กรอบเน้นคือการตรวจ input และเลือกฟิลด์ output</text>
+<text class="sub" x="40" y="576">offset = (page - 1) × limit     totalPages = ceil(total / limit)</text>
+</svg></div><p>แสดงเส้นทางข้อมูลหลัก; รวมการประสานงานของ service ไว้ในคำอธิบายเพื่อให้ภาพอ่านง่าย</p></html>

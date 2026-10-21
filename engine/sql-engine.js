@@ -672,10 +672,18 @@ function makeExecutor(server, session, sql, values) {
     let limit = null;
     let offset = 0;
     if (p.eatWord('LIMIT')) {
-      const a = p.next();
-      if (!a || a.t !== 'num') p.fail(a);
-      if (p.eatOp(',')) { const b = p.next(); offset = a.v; limit = b.v; }
-      else { limit = a.v; if (p.eatWord('OFFSET')) offset = p.next().v; }
+      const pageValue = () => {
+        const token = p.peek();
+        if (!token || !['num', 'param'].includes(token.t)) p.fail(token);
+        const operand = p.operand();
+        checkPlaceholders();
+        const value = val(operand);
+        if (!Number.isSafeInteger(value) || value < 0) p.fail(token);
+        return value;
+      };
+      const first = pageValue();
+      if (p.eatOp(',')) { offset = first; limit = pageValue(); }
+      else { limit = first; if (p.eatWord('OFFSET')) offset = pageValue(); }
     }
     if (!p.atEnd() && !(p.isOp(';') && p.i === p.tokens.length - 1)) p.fail();
     checkPlaceholders();

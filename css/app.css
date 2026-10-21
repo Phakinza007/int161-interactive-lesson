@@ -200,3 +200,9 @@ details { margin-top:10px; } summary { cursor:pointer; color:var(--muted); }
 .hint .btn { margin-top:10px; }
 
 .hint .btn:disabled { cursor:default; }
+
+/* Course additions: exam navigation and readable inline architecture. */
+.study-links { display:flex; flex-wrap:wrap; gap:10px; margin:20px 0; }
+.study-links a { text-decoration:none; }
+.diagram:has(.dd-api) { background:var(--surface); }
+@media print { .diagram-svg { overflow:visible; } .diagram svg.dd-api { min-width:0; } }

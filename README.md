@@ -2,7 +2,7 @@
 
 บทเรียนแบบ interactive สำหรับวิชา INT161 Basic Backend Development — เขียนโค้ดแบบ Node.js แล้วกด Run ในเบราว์เซอร์ได้เลย
 
-**สถานะ:** W1–W6 พร้อมใช้งาน เปิดเรียนได้ที่ [GitHub Pages](https://phakinza007.github.io/int161-interactive-lesson/)
+**สถานะ:** W1–W7 และบทเตรียมสอบกลางภาค พร้อมใช้งาน เปิดเรียนได้ที่ [GitHub Pages](https://phakinza007.github.io/int161-interactive-lesson/)
 
 ## หมายเหตุ
 
@@ -59,4 +59,14 @@ npm run check-ratio # ตรวจสัดส่วนแนวคิด:ทด
 
 W1–W6 include 22 selected topics enriched from the course transcripts, with 13 prediction questions, experiment steps, summaries, misconceptions, takeaways and source references. Six exercises reveal two conceptual hints before the original technical hint. Source dates and available VTT timestamps are shown in the lesson; raw transcripts are not included in this repository.
 
-The source mapping and accuracy notes are in [the transcript audit](docs/reviews/2026-10-13-transcript-content-audit.md). Recording weeks are matched by topic: the 1 October Error Handling transcript supplements module W6. W9 pagination is recorded as follow-on material outside the existing W1–W6 curriculum.
+The source mapping and accuracy notes are in [the transcript audit](docs/reviews/2026-10-13-transcript-content-audit.md). Recording weeks are matched by topic: the 1 October Error Handling transcript supplements module W6. That earlier audit covered W1–W6; the October update adds Pagination/DTO as W7 using the supplied Week-07 slides.
+
+## October midterm material
+
+- W7: six concepts, three experiments and three checked exercises on pagination input, SQL LIMIT/OFFSET/COUNT, DTOs and response metadata.
+- Midterm review: official rules supplied by the user, theory topic links, template gaps, offline preparation, one complete in-memory example and six invented tasks (1C/3R/1U/1D).
+- The practice tasks use fictional data and in-memory storage. They are not an official exam or a substitute for practising with MySQL.
+- `diagrams/pagination-dto.html` is a self-contained architecture figure created with Diagram Design, using the INT161 profile and system fonts. It is also embedded in W7.
+- Notes and labs are mirrored into the local Knowledge Web project as `int161/w07-pagination-and-dto` and `int161/w08-midterm-review`.
+- The standalone simulator now binds integer LIMIT/OFFSET placeholders. The integrated Knowledge Web simulator already supports them.
+- Validation and source distinctions: [October review](docs/reviews/2026-10-21-midterm-content-review.md).

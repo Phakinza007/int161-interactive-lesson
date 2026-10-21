@@ -8,9 +8,9 @@ const mk = (c, e, x) => [
   ...Array(x).fill({ type: 'exercise' }),
 ];
 
-test('EXPECTED covers w1..w6 and each sums to 20', () => {
-  assert.deepEqual(Object.keys(EXPECTED), ['w1', 'w2', 'w3', 'w4', 'w5', 'w6']);
-  for (const v of Object.values(EXPECTED)) {
+test('original W1–W6 modules keep their 20-block activity contract', () => {
+  assert.deepEqual(Object.keys(EXPECTED).slice(0, 6), ['w1', 'w2', 'w3', 'w4', 'w5', 'w6']);
+  for (const v of Object.values(EXPECTED).slice(0, 6)) {
     assert.equal(v.concept + v.experiment + v.exercise, 20);
   }
 });
