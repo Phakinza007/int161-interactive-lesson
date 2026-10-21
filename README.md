@@ -70,3 +70,7 @@ The source mapping and accuracy notes are in [the transcript audit](docs/reviews
 - Notes and labs are mirrored into the local Knowledge Web project as `int161/w07-pagination-and-dto` and `int161/w08-midterm-review`.
 - The standalone simulator now binds integer LIMIT/OFFSET placeholders. The integrated Knowledge Web simulator already supports them.
 - Validation and source distinctions: [October review](docs/reviews/2026-10-21-midterm-content-review.md).
+
+## Backend Visual Guide
+
+เปิด [backend-guide.html](backend-guide.html) จากหน้าแรกหรือบท theory/midterm เพื่อดูแผนภาพ Backend แบบกดเลือกcomponent มีหน้าที่/input-output/โค้ด/ข้อควรระวัง พร้อม7request traces, Pagination playground และ9หัวข้ออ่านต่อ ภาพSVGและscriptอยู่ในHTMLเดียว ไม่มีCDN การเดินrequestเป็นการจำลองเพื่ออธิบาย ไม่ใช่การqueryฐานจริง บันทึกHTMLไว้เปิดอ่านออฟไลน์ได้
