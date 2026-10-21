@@ -6,5 +6,6 @@ export const MODULES = [
   { id: 'w5', title: 'Express.js Framework', ready: true },
   { id: 'w6', title: 'Error Handling', ready: true },
   { id: 'w7', title: 'Pagination & DTO', ready: true },
+  { id: 'theory', title: 'อ่านสอบข้อกา · ทฤษฎี W1–W7', ready: true },
   { id: 'midterm', title: 'เตรียมสอบกลางภาค · 6 งาน CRUD', ready: true },
 ];

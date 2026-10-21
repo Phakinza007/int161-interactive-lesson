@@ -6,6 +6,7 @@ export const EXPECTED = {
   w5: { concept: 6, experiment: 5, exercise: 9 },
   w6: { concept: 5, experiment: 5, exercise: 10 },
   w7: { concept: 6, experiment: 3, exercise: 3 },
+  theory: { concept: 13, experiment: 0, exercise: 0 },
   midterm: { concept: 6, experiment: 1, exercise: 6 },
 };
 

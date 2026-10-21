@@ -24,7 +24,7 @@ for (const m of MODULES) {
   }, h('div', { class: 'card-id' }, m.id.toUpperCase()), h('h3', {}, m.title),
   h('strong', {}, m.ready ? `${Math.round(done / total * 100)}% · ทำแล้ว ${done}/${total}` : 'เร็ว ๆ นี้'),
   h('progress', { class: 'course-progress', max: total, value: done, 'aria-label': `ความคืบหน้า ${m.id}` }),
-  h('p', { class: 'muted' }, `โจทย์ผ่าน ${passed}/${exercises.length} · ${done === total ? 'เรียนครบแล้ว ✓' : 'เรียนต่อ →'}`),
+  h('p', { class: 'muted' }, exercises.length ? `โจทย์ผ่าน ${passed}/${exercises.length} · ${done === total ? 'เรียนครบแล้ว ✓' : 'เรียนต่อ →'}` : `อ่านทฤษฎี ${done}/${total} หัวข้อ · ${done === total ? 'อ่านครบแล้ว ✓' : 'อ่านต่อ →'}`),
   h('div', { class: 'card-ratio' }, h('span', { class: 'muted' }, 'รูปแบบกิจกรรม'), ratioBar(counts))));
 }
 const last = store.getLastVisited();
